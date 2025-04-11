@@ -73,7 +73,7 @@ pub fn mint_nft(
 
     msg!("Creating metadata account...");
     invoke(
-        &token_instruction::create_metadata_accounts_v2(
+        &create_metadata_accounts_v2(
             TOKEN_METADATA_ID,
             ctx.accounts.metadata.key(),
             ctx.accounts.mint.key(),
@@ -102,7 +102,7 @@ pub fn mint_nft(
 
     msg!("Creating master edition...");
     invoke(
-        &token_instruction::create_master_edition_v3(
+        &create_master_edition_v3(
             TOKEN_METADATA_ID,
             ctx.accounts.master_edition.key(),
             ctx.accounts.mint.key(),
@@ -119,28 +119,42 @@ pub fn mint_nft(
             ctx.accounts.metadata.to_account_info(),
             ctx.accounts.rent.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
+            ctx.accounts.token_metadata_program.to_account_info(),
         ],
     )?;
 
-    msg!("✅ NFT minted successfully!");
+    msg!("NFT minted successfully!");
     Ok(())
 }
 
 #[derive(Accounts)]
 pub struct MintNft<'info> {
+    #[account(
+        mut,
+        seeds = [b"metadata", TOKEN_METADATA_ID.as_ref(), mint.key().as_ref()],
+        bump
+    )]
+    pub metadata: AccountInfo<'info>,
+
+    #[account(
+        mut,
+        seeds = [b"metadata", TOKEN_METADATA_ID.as_ref(), mint.key().as_ref(), b"edition"],
+        bump
+    )]
+    pub master_edition: AccountInfo<'info>,
+
     #[account(mut)]
-    pub metadata: UncheckedAccount<'info>,
+    pub mint: Signer<'info>,
+
     #[account(mut)]
-    pub master_edition: UncheckedAccount<'info>,
-    #[account(mut)]
-    pub mint: UncheckedAccount<'info>,
-    #[account(mut)]
-    pub token_account: UncheckedAccount<'info>,
+    pub token_account: AccountInfo<'info>,
+
     #[account(mut)]
     pub mint_authority: Signer<'info>,
+
     pub rent: Sysvar<'info, Rent>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, token::Token>,
     pub associated_token_program: Program<'info, associated_token::AssociatedToken>,
-    pub token_metadata_program: UncheckedAccount<'info>,
+    pub token_metadata_program: AccountInfo<'info>,
 }
