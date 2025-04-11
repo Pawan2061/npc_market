@@ -1,52 +1,31 @@
 #![allow(clippy::result_large_err)]
 
 use anchor_lang::prelude::*;
+
 pub mod instructions;
 pub mod states;
 
-use instructions::initialize_market::*;
+use instructions::{initialize_npc_market, mint_nft, InitializeNpcMarket, MintNft};
+
 declare_id!("coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF");
 
 #[program]
 pub mod npc_market {
-
     use super::*;
 
     pub fn init_new_market(ctx: Context<InitializeNpcMarket>, market_name: String) -> Result<()> {
-        initialize_npc_market(ctx, market_name);
-        Ok(())
+        initialize_npc_market(ctx, market_name)
     }
 
-    // pub fn mint_npc() -> Result<()> {
-    //     Ok(());
-    // }
-    // pub fn evolve_npc(...) -> Result<()> {
-    //     Ok(())
-    // }
-
-    // pub fn burn_npc(...) -> Result<()> {
-    //     Ok(())
-    // }
-
-    // pub fn update_npc_metadata(...) -> Result<()> {
-    //     Ok(())
-    // }
-
-    // pub fn set_market_config(...) -> Result<()> {
-    //     Ok(())
-    // }
+    pub fn mint_new_nft(
+        ctx: Context<MintNft>,
+        metadata_title: String,
+        metadata_uri: String,
+        metadata_symbol: String,
+    ) -> Result<()> {
+        mint_nft(ctx, metadata_symbol, metadata_title, metadata_uri)
+    }
 }
-
-// #[account]
-// #[derive(InitSpace)]
-// pub struct MarketConfig {
-//     #[max_len(50)]
-//     pub market_name: String,
-//     pub authority: Pubkey,
-//     pub bump: u8,
-//     pub mint_fee_lamports: u64,
-//     pub npc_count: u64,
-// }
 
 // initialize_npc_market
 // mint_npc
