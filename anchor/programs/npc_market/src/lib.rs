@@ -11,7 +11,7 @@ declare_id!("coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF");
 
 #[program]
 pub mod npc_market {
-    use crate::instructions::store_character_metadata;
+    use crate::instructions::{evolve_nft, store_character_metadata, EvolveNft};
 
     use super::*;
 
@@ -36,6 +36,11 @@ pub mod npc_market {
         level: u8,
     ) -> Result<()> {
         store_character_metadata(ctx, class, level)?;
+        Ok(())
+    }
+
+    pub fn evolve_nft_value(ctx: Context<EvolveNft>, class: String) -> Result<()> {
+        evolve_nft(ctx, class);
         Ok(())
     }
 }
