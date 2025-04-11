@@ -11,10 +11,13 @@ declare_id!("coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF");
 
 #[program]
 pub mod npc_market {
+    use crate::instructions::store_character_metadata;
+
     use super::*;
 
     pub fn init_new_market(ctx: Context<InitializeNpcMarket>, market_name: String) -> Result<()> {
-        initialize_npc_market(ctx, market_name)
+        initialize_npc_market(ctx, market_name)?;
+        Ok(())
     }
 
     pub fn mint_new_nft(
@@ -23,12 +26,20 @@ pub mod npc_market {
         metadata_uri: String,
         metadata_symbol: String,
     ) -> Result<()> {
-        mint_nft(ctx, metadata_symbol, metadata_title, metadata_uri)
+        mint_nft(ctx, metadata_symbol, metadata_title, metadata_uri)?;
+        Ok(())
+    }
+
+    pub fn store_character(
+        ctx: Context<StoreCharacterMetadata>,
+        class: String,
+        level: u8,
+    ) -> Result<()> {
+        store_character_metadata(ctx, class, level)?;
+        Ok(())
     }
 }
 
-// initialize_npc_market
-// mint_npc
 // evolve_npc
 // burn_npc
 // update_npc_metadata

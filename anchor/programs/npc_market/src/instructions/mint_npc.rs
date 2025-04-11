@@ -126,20 +126,21 @@ pub fn mint_nft(
     msg!("NFT minted successfully!");
     Ok(())
 }
-
 #[derive(Accounts)]
 pub struct MintNft<'info> {
     #[account(
         mut,
         seeds = [b"metadata", TOKEN_METADATA_ID.as_ref(), mint.key().as_ref()],
-        bump
+        bump,
+        seeds::program = token_metadata_program.key()
     )]
     pub metadata: AccountInfo<'info>,
 
     #[account(
         mut,
         seeds = [b"metadata", TOKEN_METADATA_ID.as_ref(), mint.key().as_ref(), b"edition"],
-        bump
+        bump,
+        seeds::program = token_metadata_program.key()
     )]
     pub master_edition: AccountInfo<'info>,
 
@@ -156,5 +157,5 @@ pub struct MintNft<'info> {
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, token::Token>,
     pub associated_token_program: Program<'info, associated_token::AssociatedToken>,
-    pub token_metadata_program: AccountInfo<'info>,
+    pub token_metadata_program: UncheckedAccount<'info>,
 }
