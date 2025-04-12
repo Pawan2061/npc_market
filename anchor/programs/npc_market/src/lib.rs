@@ -11,7 +11,9 @@ declare_id!("coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF");
 
 #[program]
 pub mod npc_market {
-    use crate::instructions::{evolve_nft, store_character_metadata, transfer_npc, EvolveNft};
+    use crate::instructions::{
+        bid_nft::bid, evolve_nft, store_character_metadata, transfer_npc, EvolveNft,
+    };
 
     use super::*;
 
@@ -45,6 +47,15 @@ pub mod npc_market {
     }
     pub fn transfer_npc_ownership(ctx: Context<TransferNpc>, new_owner: Pubkey) -> Result<()> {
         transfer_npc(ctx, new_owner);
+        Ok(())
+    }
+
+    pub fn bid_nft(ctx: Context<BidNft>, bid_lamports: u64) -> Result<()> {
+        bid(ctx, bid_lamports);
+        Ok(())
+    }
+
+    pub fn sell_nft(ctx: Context<SellNft>, sell_lamports: u64) -> Result<()> {
         Ok(())
     }
 }
