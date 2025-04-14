@@ -17,7 +17,7 @@ pub fn bid(ctx: Context<BidNft>, bid_lamports: u64) -> Result<()> {
 
 #[derive(Accounts)]
 pub struct BidNft<'info> {
-    #[account(zero)]
+    #[account(mut)]
     pub mint: Account<'info, token::Mint>,
     #[account(
         init,
