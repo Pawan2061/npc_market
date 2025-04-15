@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token::{Mint, Token, TokenAccount};
 
 use crate::states::Character;
 
@@ -14,7 +15,7 @@ pub struct TransferNpc<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
 
-    pub mint: Account<'info, token::Mint>,
+    pub mint: Account<'info, Mint>,
 
     #[account(
         mut,

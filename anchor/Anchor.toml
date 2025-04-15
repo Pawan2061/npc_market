@@ -11,9 +11,12 @@ npc_market = "coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF"
 [registry]
 url = "https://api.apr.dev"
 
+
+
+
 [provider]
 cluster = "Localnet"
-wallet = "~/.config/solana/id.json"
+wallet = "/Users/pawanpandey/.config/solana/id.json"
 
 [scripts]
 test = "../node_modules/.bin/jest --preset ts-jest"

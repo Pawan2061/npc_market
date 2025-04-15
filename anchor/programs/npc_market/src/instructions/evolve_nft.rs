@@ -23,6 +23,7 @@ pub struct EvolveNft<'info> {
     pub payer: Signer<'info>,
 
     #[account(mut)]
+/// CHECK:
     pub mint: AccountInfo<'info>,
 
     #[account(

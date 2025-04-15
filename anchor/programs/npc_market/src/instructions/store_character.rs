@@ -22,17 +22,17 @@ pub struct StoreCharacter<'info> {
     #[account(
         init,
         payer = owner,
-        space = 8 + Character::INIT_SPACE,
+        space = Character::SPACE,  // Changed from INIT_SPACE to SPACE
         seeds = [b"character", mint.key().as_ref()],
         bump
     )]
     pub character: Account<'info, Character>,
-
+    
     #[account(mut)]
     pub mint: Account<'info, token::Mint>,
-
+    
     #[account(mut)]
     pub owner: Signer<'info>,
-
+    
     pub system_program: Program<'info, System>,
 }
