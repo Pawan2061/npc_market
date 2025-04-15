@@ -136,6 +136,7 @@ pub struct MintNft<'info> {
         bump,
         seeds::program = token_metadata_program.key()
     )]
+    /// CHECK
     pub metadata: AccountInfo<'info>,
 
     #[account(
@@ -144,12 +145,14 @@ pub struct MintNft<'info> {
         bump,
         seeds::program = token_metadata_program.key()
     )]
+    /// CHECK:
     pub master_edition: AccountInfo<'info>,
 
     #[account(mut)]
     pub mint: Signer<'info>,
 
     #[account(mut)]
+    /// CHECK:
     pub token_account: AccountInfo<'info>,
 
     #[account(mut)]
@@ -159,5 +162,6 @@ pub struct MintNft<'info> {
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, token::Token>,
     pub associated_token_program: Program<'info, associated_token::AssociatedToken>,
+    /// CHECK:
     pub token_metadata_program: UncheckedAccount<'info>,
 }
