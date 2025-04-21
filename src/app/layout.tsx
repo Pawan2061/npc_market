@@ -3,6 +3,7 @@ import { ClusterProvider } from "@/components/cluster/cluster-data-access";
 import { SolanaProvider } from "@/components/solana/solana-provider";
 import { UiLayout } from "@/components/ui/ui-layout";
 import { ReactQueryProvider } from "./react-query-provider";
+import PhantomNavbar from "@/components/Navbar";
 
 export const metadata = {
   title: "NpcMarket",
@@ -25,7 +26,10 @@ export default function RootLayout({
       <body>
         <ReactQueryProvider>
           <ClusterProvider>
-            <SolanaProvider>{children}</SolanaProvider>
+            <SolanaProvider>
+              <PhantomNavbar />
+              {children}
+            </SolanaProvider>
           </ClusterProvider>
         </ReactQueryProvider>
       </body>
