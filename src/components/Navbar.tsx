@@ -1,88 +1,72 @@
 "use client";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
 import { Wallet, ChevronDown, Menu, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-// Type definitions for Phantom wallet
-type PhantomEvent = "disconnect" | "connect" | "accountChanged";
-
-interface ConnectOpts {
-  onlyIfTrusted: boolean;
-}
-
-interface PhantomProvider {
-  publicKey: { toString(): string } | null;
-  isPhantom?: boolean;
-  isConnected: boolean;
-  connect: (
-    opts?: Partial<ConnectOpts>
-  ) => Promise<{ publicKey: { toString(): string } }>;
-  disconnect: () => Promise<void>;
-  on: (event: PhantomEvent, callback: (args: any) => void) => void;
-  request: (method: object) => Promise<object>;
-}
+import { useWallet } from "@solana/wallet-adapter-react";
+import { WalletName } from "@solana/wallet-adapter-base";
 
 export default function PhantomNavbar() {
-  const [isConnected, setIsConnected] = useState(false);
-  const [walletAddress, setWalletAddress] = useState("");
+  const wallet = useWallet();
+  const { publicKey, connected } = wallet;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Check if Phantom is installed and get provider
-  const getProvider = (): PhantomProvider | null => {
-    // Make TypeScript ignore the type checking for window.phantom
-    const provider = (window as any).phantom?.solana;
-
-    if (provider?.isPhantom) {
-      return provider as PhantomProvider;
-    }
-
-    return null;
-  };
-
-  // Connect to Phantom wallet
-  const connectWallet = async () => {
+  // Handle disconnect properly with Anchor
+  const handleDisconnect = async () => {
     try {
-      const provider = getProvider();
-
-      if (!provider) {
-        window.open("https://phantom.app/", "_blank");
-        return;
-      }
-
-      const response = await provider.connect();
-      setWalletAddress(response.publicKey.toString());
-      setIsConnected(true);
+      await wallet.disconnect();
+      console.log("Wallet disconnected successfully");
     } catch (error) {
-      console.error("Error connecting to wallet:", error);
+      console.error("Failed to disconnect wallet:", error);
     }
   };
 
-  // Disconnect from Phantom wallet
-  const disconnectWallet = () => {
-    const provider = getProvider();
-    if (provider) {
-      provider.disconnect();
-      setIsConnected(false);
-      setWalletAddress("");
+  // Handle connect properly with Anchor
+  const handleConnect = async () => {
+    try {
+      // Check if wallet.wallets is available
+      if (wallet.wallets && wallet.wallets.length > 0) {
+        // Find Phantom wallet adapter
+        const phantomWallet = wallet.wallets.find(
+          (w) => w.adapter.name.toLowerCase() === "phantom"
+        );
+
+        if (phantomWallet) {
+          await wallet.select(phantomWallet.adapter.name as WalletName);
+          await wallet.connect();
+        } else {
+          console.error("Phantom wallet not found");
+        }
+      } else {
+        // Fallback to just connect if we can't select
+        await wallet.connect();
+      }
+    } catch (error) {
+      console.error("Failed to connect wallet:", error);
     }
   };
+
+  useEffect(() => {
+    if (connected && publicKey) {
+      console.log("✅ Connected to:", publicKey.toBase58());
+    } else {
+      console.log("❌ Wallet disconnected");
+    }
+  }, [connected, publicKey]);
 
   return (
     <nav className="bg-slate-900 text-white shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo and brand */}
           <div className="flex items-center">
             <div className="flex-shrink-0 font-bold text-xl">My dApp</div>
           </div>
 
-          {/* Desktop menu */}
           <div className="hidden md:block">
             <div className="flex items-center space-x-4">
               <a href="#" className="px-3 py-2 rounded-md hover:bg-slate-800">
@@ -97,11 +81,10 @@ export default function PhantomNavbar() {
             </div>
           </div>
 
-          {/* Wallet connection */}
           <div className="hidden md:block">
-            {!isConnected ? (
+            {!connected ? (
               <Button
-                onClick={connectWallet}
+                onClick={handleConnect}
                 className="bg-purple-600 hover:bg-purple-700"
               >
                 <Wallet className="mr-2 h-4 w-4" />
@@ -115,7 +98,8 @@ export default function PhantomNavbar() {
                     className="border-purple-500 text-purple-500"
                   >
                     <Wallet className="mr-2 h-4 w-4" />
-                    {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
+                    {publicKey?.toBase58().slice(0, 4)}...
+                    {publicKey?.toBase58().slice(-4)}
                     <ChevronDown className="ml-2 h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -124,7 +108,7 @@ export default function PhantomNavbar() {
                   className="bg-slate-800 border-slate-700"
                 >
                   <DropdownMenuItem
-                    onClick={disconnectWallet}
+                    onClick={handleDisconnect}
                     className="text-red-400 hover:text-red-300 cursor-pointer"
                   >
                     Disconnect
@@ -134,7 +118,6 @@ export default function PhantomNavbar() {
             )}
           </div>
 
-          {/* Mobile menu button */}
           <div className="md:hidden flex items-center">
             <Button
               variant="ghost"
@@ -152,7 +135,6 @@ export default function PhantomNavbar() {
         </div>
       </div>
 
-      {/* Mobile menu */}
       {isMenuOpen && (
         <div className="md:hidden bg-slate-800">
           <div className="px-2 pt-2 pb-3 space-y-1">
@@ -174,9 +156,9 @@ export default function PhantomNavbar() {
             >
               About
             </a>
-            {!isConnected ? (
+            {!connected ? (
               <Button
-                onClick={connectWallet}
+                onClick={handleConnect}
                 className="w-full mt-2 bg-purple-600 hover:bg-purple-700"
               >
                 <Wallet className="mr-2 h-4 w-4" />
@@ -188,13 +170,14 @@ export default function PhantomNavbar() {
                   <div className="flex items-center">
                     <Wallet className="mr-2 h-4 w-4 text-purple-400" />
                     <span className="text-sm">
-                      {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
+                      {publicKey?.toBase58().slice(0, 4)}...
+                      {publicKey?.toBase58().slice(-4)}
                     </span>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={disconnectWallet}
+                    onClick={handleDisconnect}
                     className="text-red-400 hover:text-red-300"
                   >
                     Disconnect
