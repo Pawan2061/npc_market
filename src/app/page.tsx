@@ -1,5 +1,6 @@
 "use client";
 
+import Chat from "@/components/chat";
 import { Hero } from "@/components/ui/animated-hero";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useEffect } from "react";
@@ -19,6 +20,7 @@ export default function Page() {
   return (
     <main>
       <Hero />
+      <Chat />
     </main>
   );
 }

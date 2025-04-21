@@ -16,7 +16,6 @@ export default function PhantomNavbar() {
   const { publicKey, connected } = wallet;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Handle disconnect properly with Anchor
   const handleDisconnect = async () => {
     try {
       await wallet.disconnect();
@@ -26,12 +25,9 @@ export default function PhantomNavbar() {
     }
   };
 
-  // Handle connect properly with Anchor
   const handleConnect = async () => {
     try {
-      // Check if wallet.wallets is available
       if (wallet.wallets && wallet.wallets.length > 0) {
-        // Find Phantom wallet adapter
         const phantomWallet = wallet.wallets.find(
           (w) => w.adapter.name.toLowerCase() === "phantom"
         );
@@ -43,7 +39,6 @@ export default function PhantomNavbar() {
           console.error("Phantom wallet not found");
         }
       } else {
-        // Fallback to just connect if we can't select
         await wallet.connect();
       }
     } catch (error) {
