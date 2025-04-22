@@ -1,5 +1,7 @@
 // import { type PostMetadata } from "@/types/post";
 
+import { NFTMetadata } from "../types/nft";
+
 const PINATA_API_KEY = process.env.NEXT_PUBLIC_PINATA_API_KEY;
 const PINATA_SECRET_KEY = process.env.NEXT_PUBLIC_PINATA_SECRET_KEY;
 
@@ -9,7 +11,7 @@ const IPFS_GATEWAYS = [
   "https://cloudflare-ipfs.com/ipfs/",
 ];
 
-export async function uploadToIPFS(data: any): Promise<string> {
+export async function uploadToIPFS(data: NFTMetadata): Promise<string> {
   try {
     const jsonString = JSON.stringify(data);
 
@@ -79,7 +81,7 @@ async function tryFetchFromGateway(gateway: string, cid: string) {
   }
 }
 
-export async function getFromIPFS(cid: string): Promise<any> {
+export async function getFromIPFS(cid: string): Promise<NFTMetadata> {
   if (!cid) throw new Error("No CID provided");
 
   for (const gateway of IPFS_GATEWAYS) {
