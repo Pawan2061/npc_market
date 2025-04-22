@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { MoveRight, PhoneCall } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 function Hero() {
+  const router = useRouter();
   const [titleNumber, setTitleNumber] = useState(0);
   const titles = useMemo(
     () => ["amazing", "new", "wonderful", "beautiful", "smart"],
@@ -70,8 +72,14 @@ function Hero() {
             <Button size="lg" className="gap-4" variant="outline">
               Jump on a call <PhoneCall className="w-4 h-4" />
             </Button>
-            <Button size="lg" className="gap-4">
-              Sign up here <MoveRight className="w-4 h-4" />
+            <Button
+              size="lg"
+              onClick={() => {
+                router.push("/mint");
+              }}
+              className="gap-4"
+            >
+              Mint your nft here <MoveRight className="w-4 h-4" />
             </Button>
           </div>
         </div>

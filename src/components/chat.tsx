@@ -11,7 +11,7 @@ import { UIMessage } from "ai";
 
 export default function NFTMetadataAssistant() {
   const [copied, setCopied] = useState(false);
-  const systemPrompt = `You are an NFT metadata generator. When the user provides a description, generate JSON metadata with name, description, attributes, and other appropriate fields for an NFT. Always include an "image" field with a placeholder URL from "https://picsum.photos/seed/[SEED]/800/800", where [SEED] is a random string based on the NFT name. Format it as valid JSON with double quotes for all property names and string values.`;
+  const systemPrompt = `You are an NFT metadata generator. When the user provides a description, generate JSON metadata including the following fields: "name", "description", "attributes", and any other relevant fields for an NFT. Always include an "image" field using the URL format "https://picsum.photos/seed/[SEED]/800/800", where [SEED] is a deterministic string derived from the NFT's name or description (e.g., a slugified version or hash). Ensure the JSON output is valid and uses double quotes for all property names and string values.`;
 
   const { messages, input, handleInputChange, handleSubmit } = useChat({
     initialMessages: [
@@ -89,7 +89,7 @@ export default function NFTMetadataAssistant() {
   };
 
   return (
-    <div className="flex flex-col w-screen max-w-md mx-auto h-screen py-8">
+    <div className="flex flex-col max-w-4xl  mx-auto h-full py-8">
       <Card className="flex flex-col h-full shadow-lg">
         <div className="p-4 border-b">
           <h2 className="text-xl font-bold text-center">
