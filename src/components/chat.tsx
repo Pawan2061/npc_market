@@ -12,112 +12,24 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useRouter } from "next/navigation";
 import { NFTMetadata } from "@/types/nft";
+import { uploadToIPFS } from "@/utils/ipfs";
 
-export default function NFTMintPage() {
-  const router = useRouter();
-  const { connection } = useConnection();
-  const { publicKey, connected } = useWallet();
+// export default function NFTMintPage() {
+//   const router = useRouter();
+//   const { connection } = useConnection();
+//   const { publicKey, connected } = useWallet();
 
-  return (
-    <main className="flex flex-col min-h-screen bg-background">
-      {/* <HeroSection /> */}
-      <NFTMetadataAssistant />
-    </main>
-  );
-}
+//   return (
+//     <main className="flex flex-col min-h-screen bg-background">
+//       {/* <HeroSection /> */}
+//       <NFTMetadataAssistant />
+//     </main>
+//   );
+// }
 
-function HeroSection() {
-  const router = useRouter();
-  const [titleNumber, setTitleNumber] = useState(0);
-  const titles = useMemo(
-    () => ["amazing", "new", "wonderful", "beautiful", "smart"],
-    []
-  );
-
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (titleNumber === titles.length - 1) {
-        setTitleNumber(0);
-      } else {
-        setTitleNumber(titleNumber + 1);
-      }
-    }, 2000);
-    return () => clearTimeout(timeoutId);
-  }, [titleNumber, titles]);
-
-  return (
-    <div className="w-full">
-      <div className="container mx-auto">
-        <div className="flex gap-8 py-10 lg:py-20 items-center justify-center flex-col">
-          <div>
-            <Button variant="secondary" size="sm" className="gap-4">
-              Read our launch article <MoveRight className="w-4 h-4" />
-            </Button>
-          </div>
-          <div className="flex gap-4 flex-col">
-            <h1 className="text-5xl md:text-7xl max-w-2xl tracking-tighter text-center font-regular">
-              <span className="text-spektr-cyan-50">Create unique</span>
-              <span className="relative flex w-full justify-center overflow-hidden text-center md:pb-4 md:pt-1">
-                &nbsp;
-                {titles.map((title, index) => (
-                  <motion.span
-                    key={index}
-                    className="absolute font-semibold"
-                    initial={{ opacity: 0, y: "-100" }}
-                    transition={{ type: "spring", stiffness: 50 }}
-                    animate={
-                      titleNumber === index
-                        ? {
-                            y: 0,
-                            opacity: 1,
-                          }
-                        : {
-                            y: titleNumber > index ? -150 : 150,
-                            opacity: 0,
-                          }
-                    }
-                  >
-                    {title}
-                  </motion.span>
-                ))}
-                &nbsp;NFTs
-              </span>
-            </h1>
-
-            <p className="text-lg md:text-xl leading-relaxed tracking-tight text-muted-foreground max-w-2xl text-center">
-              Generate custom NFT metadata in seconds with our AI-powered
-              generator. Simply describe your NFT concept, and we'll create
-              beautiful, structured metadata ready for minting on the
-              blockchain.
-            </p>
-          </div>
-          <div className="flex flex-row gap-3">
-            <Button size="lg" className="gap-4" variant="outline">
-              Learn more <PhoneCall className="w-4 h-4" />
-            </Button>
-            <Button
-              size="lg"
-              onClick={() => {
-                const generatorSection =
-                  document.getElementById("nft-generator");
-                if (generatorSection) {
-                  generatorSection.scrollIntoView({ behavior: "smooth" });
-                }
-              }}
-              className="gap-4"
-            >
-              Start generating <MoveRight className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function NFTMetadataAssistant() {
+export default function NFTMetadataAssistant() {
   const [copied, setCopied] = useState(false);
-  const systemPrompt = `You are an NFT metadata generator. When the user provides a description, generate JSON metadata including the following fields: "name", "description", "attributes", and any other relevant fields for an NFT. Always include an "image" field using the URL format "https://picsum.photos/seed/[SEED]/800/800", where [SEED] is a deterministic string derived from the NFT's name or description (e.g., a slugified version or hash). Ensure the JSON output is valid and uses double quotes for all property names and string values.`;
+  const systemPrompt = `You are an NFT metadata generator. When the user provides a description, generate JSON metadata including the following fields: "name", "description", "attributes", and any other relevant fields for an NFT. Always include an "image" field using the URL format "https://picsum.photos/seed/[SEED]/800/800", where [SEED] is a deterministic string derived from the NFT's name or description (e.g., a slugified version or hash). Ensure the JSON output is valid and uses double quotes for all property names and string values. The image must match the name or description provided so dont just pick out any random images, read the description carefully and provide the image`;
 
   const { messages, input, handleInputChange, handleSubmit } = useChat({
     initialMessages: [
@@ -129,7 +41,11 @@ function NFTMetadataAssistant() {
     ],
   });
 
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = async (text: string) => {
+    console.log(JSON.parse(text), "hello boix");
+    const output = await uploadToIPFS(JSON.parse(text));
+    console.log(output, "output is here");
+
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -176,6 +92,7 @@ function NFTMetadataAssistant() {
         .replace(/'(\w+)/g, '"$1');
 
       const parsed = JSON.parse(jsonContent);
+
       return parsed;
     } catch (e) {
       console.error("JSON parsing error:", e);
@@ -195,7 +112,7 @@ function NFTMetadataAssistant() {
   };
 
   return (
-    <div id="nft-generator" className="bg-muted/40 py-16">
+    <div id="nft-generator" className="bg-muted/40 py-16 overflow-hidden">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

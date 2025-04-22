@@ -14,6 +14,7 @@ const IPFS_GATEWAYS = [
 export async function uploadToIPFS(data: NFTMetadata): Promise<string> {
   try {
     const jsonString = JSON.stringify(data);
+    console.log(jsonString, "okay data is here finally");
 
     const formData = new FormData();
     const blob = new Blob([jsonString], { type: "application/json" });
@@ -29,6 +30,7 @@ export async function uploadToIPFS(data: NFTMetadata): Promise<string> {
     });
 
     const data_res = await res.json();
+    console.log(data_res, "uploaded data res is here");
 
     if (!res.ok) {
       throw new Error("Failed to upload to Pinata");
