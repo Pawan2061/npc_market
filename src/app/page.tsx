@@ -19,6 +19,7 @@ export default function Page() {
   }
   return (
     <main>
+      hi
       <Hero />
       {/* <Chat /> */}
     </main>
