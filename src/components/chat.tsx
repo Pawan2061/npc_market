@@ -11,25 +11,17 @@ import { UIMessage } from "ai";
 import { motion, AnimatePresence } from "framer-motion";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useRouter } from "next/navigation";
-import { NFTMetadata } from "@/types/nft";
+import { MintNftArgs, NFTMetadata } from "@/types/nft";
 import { uploadToIPFS } from "@/utils/ipfs";
-
-// export default function NFTMintPage() {
-//   const router = useRouter();
-//   const { connection } = useConnection();
-//   const { publicKey, connected } = useWallet();
-
-//   return (
-//     <main className="flex flex-col min-h-screen bg-background">
-//       {/* <HeroSection /> */}
-//       <NFTMetadataAssistant />
-//     </main>
-//   );
-// }
+import { getNpcMarketProgram } from "@project/anchor";
+import { useNpcMarketProgram } from "./npc_market/npc_market-data-access";
+import { mintNftWithMetadata } from "@/utils/sol";
 
 export default function NFTMetadataAssistant() {
+  const program = useNpcMarketProgram();
+
   const [copied, setCopied] = useState(false);
-  const systemPrompt = `You are an NFT metadata generator. When the user provides a description, generate JSON metadata including the following fields: "name", "description", "attributes", and any other relevant fields for an NFT. Always include an "image" field using the URL format "https://picsum.photos/seed/[SEED]/800/800", where [SEED] is a deterministic string derived from the NFT's name or description (e.g., a slugified version or hash). Ensure the JSON output is valid and uses double quotes for all property names and string values. The image must match the name or description provided so dont just pick out any random images, read the description carefully and provide the image`;
+  const systemPrompt = `You are an NFT metadata generator. When the user provides a description, generate JSON metadata including the following fields: "name", "description", "attributes" "symbol", and any other relevant fields for an NFT. Always include an "image" field using the URL format "https://picsum.photos/seed/[SEED]/800/800", where [SEED] is a deterministic string derived from the NFT's name or description (e.g., a slugified version or hash) and a symbol too. Ensure the JSON output is valid and uses double quotes for all property names and string values. The image must match the name or description provided so dont just pick out any random images, read the description carefully and provide the image`;
 
   const { messages, input, handleInputChange, handleSubmit } = useChat({
     initialMessages: [
@@ -40,15 +32,42 @@ export default function NFTMetadataAssistant() {
       },
     ],
   });
+  const { connection } = useConnection();
+  const wallet = useWallet();
 
   const copyToClipboard = async (text: string) => {
-    console.log(JSON.parse(text), "hello boix");
-    const output = await uploadToIPFS(JSON.parse(text));
-    console.log(output, "output is here");
+    try {
+      const resp = JSON.parse(text);
 
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+      const metadataUri = await uploadToIPFS(resp);
+
+      const input: MintNftArgs = {
+        metadataSymbol: resp.symbol,
+        metadataTitle: resp.name,
+        metadataUri,
+      };
+
+      if (!wallet.publicKey || !program) {
+        alert("Wallet not connected or program not loaded");
+        return;
+      }
+
+      await mintNftWithMetadata({
+        metadataTitle: input.metadataTitle,
+        metadataSymbol: input.metadataSymbol,
+        metadataUri: input.metadataUri,
+        connection,
+        wallet,
+        program,
+      });
+
+      navigator.clipboard.writeText(JSON.stringify(resp, null, 2));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error("Minting failed:", error);
+      alert("Something went wrong during minting.");
+    }
   };
 
   const downloadJSON = (content: string, fileName: string) => {
