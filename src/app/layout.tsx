@@ -4,6 +4,7 @@ import { SolanaProvider } from "@/components/solana/solana-provider";
 import { UiLayout } from "@/components/ui/ui-layout";
 import { ReactQueryProvider } from "./react-query-provider";
 import PhantomNavbar from "@/components/Navbar";
+import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata = {
   title: "NpcMarket",
@@ -27,8 +28,14 @@ export default function RootLayout({
         <ReactQueryProvider>
           <ClusterProvider>
             <SolanaProvider>
-              <PhantomNavbar />
-              {children}
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="light"
+                enableSystem
+              >
+                <PhantomNavbar />
+                {children}
+              </ThemeProvider>
             </SolanaProvider>
           </ClusterProvider>
         </ReactQueryProvider>
