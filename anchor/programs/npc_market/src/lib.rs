@@ -5,7 +5,7 @@ pub mod states;
 use anchor_lang::prelude::*;
 use instructions::*;
 
-declare_id!("coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF");
+declare_id!("BxeZgbTm42B6mLQLe9z1htBrF5SwRZ3L2qPA3HHzDqL9");
 
 #[program]
 pub mod npc_market {

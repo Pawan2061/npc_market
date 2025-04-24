@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/npc_market.json`.
  */
 export type NpcMarket = {
-  "address": "coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF",
+  "address": "BxeZgbTm42B6mLQLe9z1htBrF5SwRZ3L2qPA3HHzDqL9",
   "metadata": {
     "name": "npcMarket",
     "version": "0.1.0",
@@ -571,8 +571,8 @@ export type NpcMarket = {
   "errors": [
     {
       "code": 6000,
-      "name": "stringTooLong",
-      "msg": "String exceeds maximum length"
+      "name": "invalidOwner",
+      "msg": "Token account does not belong to payer or doesn't hold NFT."
     }
   ],
   "types": [

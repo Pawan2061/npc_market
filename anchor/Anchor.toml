@@ -5,18 +5,15 @@ anchor_version = "0.31.1"
 resolution = true
 skip-lint = false
 
-[programs.localnet]
-npc_market = "coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF"
+[programs.devnet]
+npc_market = "BxeZgbTm42B6mLQLe9z1htBrF5SwRZ3L2qPA3HHzDqL9"
 
 [registry]
 url = "https://api.apr.dev"
 
-
-
-
 [provider]
-cluster = "Localnet"
-wallet = "/Users/pawanpandey/.config/solana/id.json"
+cluster = "devnet"
+wallet = "~/.config/solana/my-new-wallet.json"
 
 [scripts]
 test = "../node_modules/.bin/jest --preset ts-jest"

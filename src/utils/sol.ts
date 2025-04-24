@@ -4,6 +4,7 @@ import {
   SystemProgram,
   Transaction,
   SYSVAR_RENT_PUBKEY,
+  Connection,
 } from "@solana/web3.js";
 import {
   getAssociatedTokenAddress,
@@ -18,14 +19,11 @@ import {
   mplTokenMetadata,
   MPL_TOKEN_METADATA_PROGRAM_ID,
 } from "@metaplex-foundation/mpl-token-metadata";
-// import {
-//   findMetadataPda,
-//   findMasterEditionPda,
-// } from "@metaplex-foundation/mpl-token-metadata";
 import { publicKey } from "@metaplex-foundation/umi";
-
-import { uploadToIPFS } from "@/utils/ipfs";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
+import { WalletContextState } from "@solana/wallet-adapter-react";
+import { Program } from "@coral-xyz/anchor";
+import { NpcMarket } from "@project/anchor";
 
 export const mintNftWithMetadata = async ({
   metadataTitle,
@@ -38,16 +36,17 @@ export const mintNftWithMetadata = async ({
   metadataTitle: string;
   metadataSymbol: string;
   metadataUri: string;
-  connection: any;
-  wallet: any;
-  program: any;
+  connection: Connection;
+  wallet: WalletContextState;
+  program: Program<NpcMarket>;
 }) => {
-  if (!wallet.connected || !wallet.publicKey) {
-    throw new Error("Wallet not connected");
+  console.log(Object.keys(program.methods));
+
+  if (!wallet.connected || !wallet.publicKey || !wallet.signTransaction) {
+    throw new Error("Wallet not connected or missing signing methods");
   }
 
-  console.log("Starting NFT mint process");
-  console.log("Wallet public key:", wallet.publicKey.toBase58());
+  console.log(program.methods);
 
   const mint = Keypair.generate();
   const umi = createUmi(connection);
@@ -65,16 +64,16 @@ export const mintNftWithMetadata = async ({
   const masterEditionPDA = findMasterEditionPda(umi, {
     mint: publicKey(mint.publicKey.toBase58()),
   });
+  console.log(
+    "Signers:",
+    mint.publicKey.toBase58(),
+    wallet.publicKey.toBase58()
+  );
 
   try {
-    const balance = await connection.getBalance(wallet.publicKey);
-    console.log("Wallet balance:", balance / 1000000000, "SOL");
-
     const tx = new Transaction();
-
-    // Add a recent blockhash
-    tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
     tx.feePayer = wallet.publicKey;
+    tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
 
     tx.add(
       SystemProgram.createAccount({
@@ -98,43 +97,40 @@ export const mintNftWithMetadata = async ({
       )
     );
 
-    console.log("Sending transaction...");
-    const signedTx = await wallet.sendTransaction(tx, connection, {
-      signers: [mint],
-    });
+    tx.partialSign(mint);
 
-    console.log("Transaction sent:", signedTx);
-    console.log("Confirming transaction...");
+    const signedTx = await wallet.signTransaction(tx);
 
-    await connection.confirmTransaction(signedTx, "confirmed");
-    console.log("First transaction confirmed");
+    const txId = await connection.sendRawTransaction(signedTx.serialize());
+    await connection.confirmTransaction(txId, "confirmed");
+    console.log("Mint keypair (base58):", mint.publicKey.toBase58());
 
-    await program.methods
-      .mintNewNft(metadataTitle, metadataUri, metadataSymbol)
-      .accounts({
-        mint: mint.publicKey,
-        tokenAccount,
-        metadata: metadataPDA,
-        masterEdition: masterEditionPDA,
-        mintAuthority: wallet.publicKey,
-        payer: wallet.publicKey,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        systemProgram: SystemProgram.programId,
-        rent: SYSVAR_RENT_PUBKEY,
-        tokenMetadataProgram: MPL_TOKEN_METADATA_PROGRAM_ID,
-      })
-      .signers([mint])
-      .rpc();
+    try {
+      const ix = await program.methods
+        .mintNewNft(metadataTitle, metadataUri, metadataSymbol)
+        .accounts({
+          mint: mint.publicKey,
+          tokenAccount: tokenAccount,
+          metadata: new PublicKey(metadataPDA[0]),
+          masterEdition: new PublicKey(masterEditionPDA[0]),
+          mintAuthority: wallet.publicKey,
+          payer: wallet.publicKey,
+          tokenMetadataProgram: MPL_TOKEN_METADATA_PROGRAM_ID,
+        })
 
-    console.log("NFT minted:", mint.publicKey.toBase58());
-    return mint.publicKey.toBase58();
-  } catch (error) {
-    console.error("Error details:", error);
+        .rpc();
 
-    if (error) {
-      throw new Error("Not enough SOL in wallet to complete transaction");
+      return mint.publicKey.toBase58();
+    } catch (error) {
+      console.error("Error during NFT minting:", error);
+      throw error;
     }
-
-    throw error;
+  } catch (error) {
+    console.error("Error during NFT minting:", error);
+    throw new Error(
+      error instanceof Error
+        ? error.message
+        : "An unknown error occurred during minting"
+    );
   }
 };

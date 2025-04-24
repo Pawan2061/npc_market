@@ -18,7 +18,7 @@ import { useNpcMarketProgram } from "./npc_market/npc_market-data-access";
 import { mintNftWithMetadata } from "@/utils/sol";
 
 export default function NFTMetadataAssistant() {
-  const program = useNpcMarketProgram();
+  const { program } = useNpcMarketProgram();
 
   const [copied, setCopied] = useState(false);
   const systemPrompt = `You are an NFT metadata generator. When the user provides a description, generate JSON metadata including the following fields: "name", "description", "attributes" "symbol", and any other relevant fields for an NFT. Always include an "image" field using the URL format "https://picsum.photos/seed/[SEED]/800/800", where [SEED] is a deterministic string derived from the NFT's name or description (e.g., a slugified version or hash) and a symbol too. Ensure the JSON output is valid and uses double quotes for all property names and string values. The image must match the name or description provided so dont just pick out any random images, read the description carefully and provide the image`;
@@ -114,7 +114,7 @@ export default function NFTMetadataAssistant() {
 
       return parsed;
     } catch (e) {
-      console.error("JSON parsing error:", e);
+      // console.error("JSON parsing error:", e);
       return null;
     }
   };

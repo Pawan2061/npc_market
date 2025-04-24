@@ -1,5 +1,5 @@
 {
-  "address": "H3Ni6GnDiGu5HTAfLvMWbxR1AUtg3XEPv8yDHurjkY1Q",
+  "address": "BxeZgbTm42B6mLQLe9z1htBrF5SwRZ3L2qPA3HHzDqL9",
   "metadata": {
     "name": "npc_market",
     "version": "0.1.0",
@@ -565,8 +565,8 @@
   "errors": [
     {
       "code": 6000,
-      "name": "StringTooLong",
-      "msg": "String exceeds maximum length"
+      "name": "InvalidOwner",
+      "msg": "Token account does not belong to payer or doesn't hold NFT."
     }
   ],
   "types": [
