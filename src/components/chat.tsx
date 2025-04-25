@@ -36,14 +36,10 @@ export default function NFTMetadataAssistant() {
 
   const umi = createUmi(clusterApiUrl("devnet"))
     .use(walletAdapterIdentity(wallet.adapter))
-    .use(mplTokenMetadata()); // 👈 Required for metadata
-  // .use(createSplToken()) // 👈 Required for token operations
-  // .use(createSplAssociatedToken()) // 👈 This is the one causing your error
-  // .use(createSystemProgram())
-  // .use(createRentProgram());
+    .use(mplTokenMetadata());
+
   const mint = generateSigner(umi);
 
-  const [copied, setCopied] = useState(false);
   const systemPrompt = `You are an NFT metadata generator. When the user provides a description, generate JSON metadata including the following fields: "name", "description", "attributes" "symbol", and any other relevant fields for an NFT. Always include an "image" field using the URL format "https://picsum.photos/seed/[SEED]/800/800", where [SEED] is a deterministic string derived from the NFT's name or description (e.g., a slugified version or hash) and a symbol too. Ensure the JSON output is valid and uses double quotes for all property names and string values. The image must match the name or description provided so dont just pick out any random images, read the description carefully and provide the image`;
 
   const { messages, input, handleInputChange, handleSubmit } = useChat({
@@ -55,71 +51,6 @@ export default function NFTMetadataAssistant() {
       },
     ],
   });
-  const { connection } = useConnection();
-
-  // const copyToClipboard = async (text: string) => {
-  //   try {
-  //     const resp = JSON.parse(text);
-
-  //     const metadataUri = await uploadToIPFS(resp);
-
-  //     const input: MintNftArgs = {
-  //       metadataSymbol: resp.symbol,
-  //       metadataTitle: resp.name,
-  //       metadataUri,
-  //     };
-
-  //     if (!wallet.publicKey || !program) {
-  //       alert("Wallet not connected or program not loaded");
-  //       return;
-  //     }
-
-  //     const { createMintTx, mintTx, mint } = await createMintNftAction({
-  //       metadataTitle: input.metadataTitle,
-  //       metadataSymbol: input.metadataSymbol,
-  //       metadataUri: input.metadataUri,
-  //       connection,
-  //       wallet,
-  //       program,
-  //     });
-
-  //     const txId = await executeMintNftAction(
-  //       createMintTx,
-  //       mintTx,
-  //       mint,
-  //       wallet,
-  //       connection
-  //     );
-  //     console.log("NFT minted successfully! Transaction ID:", txId);
-
-  //     navigator.clipboard.writeText(JSON.stringify(resp, null, 2));
-  //     setCopied(true);
-  //     setTimeout(() => setCopied(false), 2000);
-  //   } catch (error) {
-  //     console.error("Minting failed:", error);
-  //     alert("Something went wrong during minting.");
-  //   }
-  // };
-
-  const downloadJSON = (content: string, fileName: string) => {
-    try {
-      const jsonObject =
-        typeof content === "object" ? content : JSON.parse(content);
-      const jsonString = JSON.stringify(jsonObject, null, 2);
-      const blob = new Blob([jsonString], { type: "application/json" });
-      const href = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = href;
-      link.download = fileName || "nft-metadata.json";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(href);
-    } catch (error) {
-      console.error("Error downloading JSON:", error);
-      alert("There was an error processing the JSON. Please check the format.");
-    }
-  };
 
   const extractJSON = (text: string) => {
     try {
@@ -305,22 +236,14 @@ export default function NFTMetadataAssistant() {
                                               variant="ghost"
                                               size="icon"
                                               className="h-6 w-6 bg-white/80 dark:bg-black/50 rounded-full"
-                                              onClick={
-                                                () =>
-                                                  generateNft(
-                                                    JSON.stringify(
-                                                      jsonContent,
-                                                      null,
-                                                      2
-                                                    )
+                                              onClick={() =>
+                                                generateNft(
+                                                  JSON.stringify(
+                                                    jsonContent,
+                                                    null,
+                                                    2
                                                   )
-                                                // copyToClipboard(
-                                                //   JSON.stringify(
-                                                //     jsonContent,
-                                                //     null,
-                                                //     2
-                                                //   )
-                                                // )
+                                                )
                                               }
                                             >
                                               <Copy className="h-3 w-3" />
@@ -333,12 +256,6 @@ export default function NFTMetadataAssistant() {
                                               variant="ghost"
                                               size="icon"
                                               className="h-6 w-6 bg-white/80 dark:bg-black/50 rounded-full"
-                                              onClick={() =>
-                                                downloadJSON(
-                                                  jsonContent,
-                                                  "nft-metadata.json"
-                                                )
-                                              }
                                             >
                                               <Download className="h-3 w-3" />
                                             </Button>
@@ -390,7 +307,7 @@ export default function NFTMetadataAssistant() {
           </Card>
         </motion.div>
 
-        <AnimatePresence>
+        {/* <AnimatePresence>
           {copied && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -402,7 +319,7 @@ export default function NFTMetadataAssistant() {
               Copied to clipboard!
             </motion.div>
           )}
-        </AnimatePresence>
+        </AnimatePresence> */}
       </motion.div>
     </div>
   );

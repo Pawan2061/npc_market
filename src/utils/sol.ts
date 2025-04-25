@@ -55,17 +55,14 @@ export const mintNftWithMetadata = async ({
   tx.feePayer = wallet.publicKey;
   tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
 
-  // Create mint account
   const mint = Keypair.generate();
   console.log("Generated mint:", mint.publicKey.toBase58());
 
-  // Create associated token account
   const tokenAccount = await getAssociatedTokenAddress(
     mint.publicKey,
     wallet.publicKey
   );
 
-  // Get PDAs for metadata and master edition
   const metadataPDA = findMetadataPda(umi, {
     mint: publicKey(mint.publicKey.toBase58()),
   });
@@ -75,7 +72,6 @@ export const mintNftWithMetadata = async ({
   });
 
   try {
-    // First transaction: Create mint account and token account
     tx.add(
       SystemProgram.createAccount({
         fromPubkey: wallet.publicKey,
@@ -98,13 +94,11 @@ export const mintNftWithMetadata = async ({
       )
     );
 
-    // Sign and send first transaction
     const signedTx = await wallet.signTransaction(tx);
     signedTx.partialSign(mint);
     const txId = await connection.sendRawTransaction(signedTx.serialize());
     await connection.confirmTransaction(txId, "confirmed");
 
-    // Second transaction: Mint NFT
     const mintTx = await program.methods
       .mintNewNft(metadataTitle, metadataUri, metadataSymbol)
       .accounts({
