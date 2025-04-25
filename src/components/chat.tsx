@@ -15,7 +15,7 @@ import { MintNftArgs, NFTMetadata } from "@/types/nft";
 import { uploadToIPFS } from "@/utils/ipfs";
 import { getNpcMarketProgram } from "@project/anchor";
 import { useNpcMarketProgram } from "./npc_market/npc_market-data-access";
-import { mintNftWithMetadata } from "@/utils/sol";
+import { createMintNftAction, executeMintNftAction } from "@/utils/nft-actions";
 
 export default function NFTMetadataAssistant() {
   const { program } = useNpcMarketProgram();
@@ -52,7 +52,8 @@ export default function NFTMetadataAssistant() {
         return;
       }
 
-      await mintNftWithMetadata({
+      // Create the mint NFT transaction
+      const { createMintTx, mintTx, mint } = await createMintNftAction({
         metadataTitle: input.metadataTitle,
         metadataSymbol: input.metadataSymbol,
         metadataUri: input.metadataUri,
@@ -60,6 +61,16 @@ export default function NFTMetadataAssistant() {
         wallet,
         program,
       });
+
+      // Execute the transaction
+      const txId = await executeMintNftAction(
+        createMintTx,
+        mintTx,
+        mint,
+        wallet,
+        connection
+      );
+      console.log("NFT minted successfully! Transaction ID:", txId);
 
       navigator.clipboard.writeText(JSON.stringify(resp, null, 2));
       setCopied(true);

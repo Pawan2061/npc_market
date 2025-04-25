@@ -1,18 +1,17 @@
 import {
+  Connection,
   Keypair,
   PublicKey,
   SystemProgram,
-  Transaction,
   SYSVAR_RENT_PUBKEY,
-  Connection,
+  Transaction,
 } from "@solana/web3.js";
 import {
-  getAssociatedTokenAddress,
-  createInitializeMintInstruction,
   createAssociatedTokenAccountInstruction,
+  createInitializeMintInstruction,
+  getAssociatedTokenAddress,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-
 import {
   findMetadataPda,
   findMasterEditionPda,
@@ -25,41 +24,36 @@ import { WalletContextState } from "@solana/wallet-adapter-react";
 import { Program } from "@coral-xyz/anchor";
 import { NpcMarket } from "@project/anchor";
 
-export const mintNftWithMetadata = async ({
-  metadataTitle,
-  metadataSymbol,
-  metadataUri,
-  connection,
-  wallet,
-  program,
-}: {
+interface MintNftParams {
   metadataTitle: string;
   metadataSymbol: string;
   metadataUri: string;
   connection: Connection;
   wallet: WalletContextState;
   program: Program<NpcMarket>;
-}) => {
-  console.log(Object.keys(program.methods));
+}
 
+export const mintNft = async ({
+  metadataTitle,
+  metadataSymbol,
+  metadataUri,
+  connection,
+  wallet,
+  program,
+}: MintNftParams): Promise<string> => {
   if (!wallet.connected || !wallet.publicKey || !wallet.signTransaction) {
     throw new Error("Wallet not connected or missing signing methods");
   }
 
-  console.log(program.methods);
-
+  // Initialize UMI for Metaplex
   const umi = createUmi(connection);
   umi.use(mplTokenMetadata());
 
-  const tx = new Transaction();
-  tx.feePayer = wallet.publicKey;
-  tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
-
-  // Create mint account
+  // Generate mint keypair
   const mint = Keypair.generate();
   console.log("Generated mint:", mint.publicKey.toBase58());
 
-  // Create associated token account
+  // Get associated token account address
   const tokenAccount = await getAssociatedTokenAddress(
     mint.publicKey,
     wallet.publicKey
@@ -75,8 +69,15 @@ export const mintNftWithMetadata = async ({
   });
 
   try {
-    // First transaction: Create mint account and token account
-    tx.add(
+    // Create mint account transaction
+    const createMintTx = new Transaction();
+    createMintTx.feePayer = wallet.publicKey;
+    createMintTx.recentBlockhash = (
+      await connection.getLatestBlockhash()
+    ).blockhash;
+
+    // Add instructions to create mint account and token account
+    createMintTx.add(
       SystemProgram.createAccount({
         fromPubkey: wallet.publicKey,
         newAccountPubkey: mint.publicKey,
@@ -98,18 +99,20 @@ export const mintNftWithMetadata = async ({
       )
     );
 
-    // Sign and send first transaction
-    const signedTx = await wallet.signTransaction(tx);
-    signedTx.partialSign(mint);
-    const txId = await connection.sendRawTransaction(signedTx.serialize());
-    await connection.confirmTransaction(txId, "confirmed");
+    // Sign and send create mint transaction
+    const signedCreateMintTx = await wallet.signTransaction(createMintTx);
+    signedCreateMintTx.partialSign(mint);
+    const createMintTxId = await connection.sendRawTransaction(
+      signedCreateMintTx.serialize()
+    );
+    await connection.confirmTransaction(createMintTxId, "confirmed");
 
-    // Second transaction: Mint NFT
+    // Mint NFT using program
     const mintTx = await program.methods
       .mintNewNft(metadataTitle, metadataUri, metadataSymbol)
       .accounts({
         mint: mint.publicKey,
-        tokenAccount: tokenAccount,
+        tokenAccount,
         metadata: new PublicKey(metadataPDA[0]),
         masterEdition: new PublicKey(masterEditionPDA[0]),
         mintAuthority: wallet.publicKey,
@@ -124,8 +127,9 @@ export const mintNftWithMetadata = async ({
       .signers([mint])
       .rpc();
 
-    console.log("NFT minted:", mint.publicKey.toBase58());
-    console.log("Mint transaction signature:", mintTx);
+    console.log("NFT minted successfully!");
+    console.log("Mint address:", mint.publicKey.toBase58());
+    console.log("Transaction signature:", mintTx);
 
     return mint.publicKey.toBase58();
   } catch (error) {

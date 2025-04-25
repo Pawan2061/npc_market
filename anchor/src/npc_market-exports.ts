@@ -29,7 +29,7 @@ export function getNpcMarketProgramId(cluster: Cluster) {
     case "devnet":
     case "testnet":
       // This is the program ID for the NpcMarket program on devnet and testnet.
-      return new PublicKey("coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF");
+      return new PublicKey(NpcMarketIDL.address);
     case "mainnet-beta":
     default:
       return NPC_MARKET_PROGRAM_ID;
