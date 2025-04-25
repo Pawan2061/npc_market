@@ -16,9 +16,32 @@ import { uploadToIPFS } from "@/utils/ipfs";
 import { getNpcMarketProgram } from "@project/anchor";
 import { useNpcMarketProgram } from "./npc_market/npc_market-data-access";
 import { createMintNftAction, executeMintNftAction } from "@/utils/nft-actions";
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
+import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
+import { generateSigner, percentAmount } from "@metaplex-foundation/umi";
+import { Wallet } from "@coral-xyz/anchor";
+import {
+  createNft,
+  mplTokenMetadata,
+} from "@metaplex-foundation/mpl-token-metadata";
+import { clusterApiUrl } from "@solana/web3.js";
 
 export default function NFTMetadataAssistant() {
   const { program } = useNpcMarketProgram();
+  const { wallet } = useWallet();
+  if (!wallet?.adapter) {
+    console.error("Wallet not connected");
+    return;
+  }
+
+  const umi = createUmi(clusterApiUrl("devnet"))
+    .use(walletAdapterIdentity(wallet.adapter))
+    .use(mplTokenMetadata()); // 👈 Required for metadata
+  // .use(createSplToken()) // 👈 Required for token operations
+  // .use(createSplAssociatedToken()) // 👈 This is the one causing your error
+  // .use(createSystemProgram())
+  // .use(createRentProgram());
+  const mint = generateSigner(umi);
 
   const [copied, setCopied] = useState(false);
   const systemPrompt = `You are an NFT metadata generator. When the user provides a description, generate JSON metadata including the following fields: "name", "description", "attributes" "symbol", and any other relevant fields for an NFT. Always include an "image" field using the URL format "https://picsum.photos/seed/[SEED]/800/800", where [SEED] is a deterministic string derived from the NFT's name or description (e.g., a slugified version or hash) and a symbol too. Ensure the JSON output is valid and uses double quotes for all property names and string values. The image must match the name or description provided so dont just pick out any random images, read the description carefully and provide the image`;
@@ -33,53 +56,50 @@ export default function NFTMetadataAssistant() {
     ],
   });
   const { connection } = useConnection();
-  const wallet = useWallet();
 
-  const copyToClipboard = async (text: string) => {
-    try {
-      const resp = JSON.parse(text);
+  // const copyToClipboard = async (text: string) => {
+  //   try {
+  //     const resp = JSON.parse(text);
 
-      const metadataUri = await uploadToIPFS(resp);
+  //     const metadataUri = await uploadToIPFS(resp);
 
-      const input: MintNftArgs = {
-        metadataSymbol: resp.symbol,
-        metadataTitle: resp.name,
-        metadataUri,
-      };
+  //     const input: MintNftArgs = {
+  //       metadataSymbol: resp.symbol,
+  //       metadataTitle: resp.name,
+  //       metadataUri,
+  //     };
 
-      if (!wallet.publicKey || !program) {
-        alert("Wallet not connected or program not loaded");
-        return;
-      }
+  //     if (!wallet.publicKey || !program) {
+  //       alert("Wallet not connected or program not loaded");
+  //       return;
+  //     }
 
-      // Create the mint NFT transaction
-      const { createMintTx, mintTx, mint } = await createMintNftAction({
-        metadataTitle: input.metadataTitle,
-        metadataSymbol: input.metadataSymbol,
-        metadataUri: input.metadataUri,
-        connection,
-        wallet,
-        program,
-      });
+  //     const { createMintTx, mintTx, mint } = await createMintNftAction({
+  //       metadataTitle: input.metadataTitle,
+  //       metadataSymbol: input.metadataSymbol,
+  //       metadataUri: input.metadataUri,
+  //       connection,
+  //       wallet,
+  //       program,
+  //     });
 
-      // Execute the transaction
-      const txId = await executeMintNftAction(
-        createMintTx,
-        mintTx,
-        mint,
-        wallet,
-        connection
-      );
-      console.log("NFT minted successfully! Transaction ID:", txId);
+  //     const txId = await executeMintNftAction(
+  //       createMintTx,
+  //       mintTx,
+  //       mint,
+  //       wallet,
+  //       connection
+  //     );
+  //     console.log("NFT minted successfully! Transaction ID:", txId);
 
-      navigator.clipboard.writeText(JSON.stringify(resp, null, 2));
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error("Minting failed:", error);
-      alert("Something went wrong during minting.");
-    }
-  };
+  //     navigator.clipboard.writeText(JSON.stringify(resp, null, 2));
+  //     setCopied(true);
+  //     setTimeout(() => setCopied(false), 2000);
+  //   } catch (error) {
+  //     console.error("Minting failed:", error);
+  //     alert("Something went wrong during minting.");
+  //   }
+  // };
 
   const downloadJSON = (content: string, fileName: string) => {
     try {
@@ -125,8 +145,28 @@ export default function NFTMetadataAssistant() {
 
       return parsed;
     } catch (e) {
-      // console.error("JSON parsing error:", e);
       return null;
+    }
+  };
+  const generateNft = async (text: string) => {
+    try {
+      const resp = JSON.parse(text);
+      const ipfsHash = await uploadToIPFS(resp);
+      const metadataUri = `https://ipfs.io/ipfs/${ipfsHash}`;
+      console.log(resp, "Minting with metadata URI:", metadataUri);
+
+      await createNft(umi, {
+        mint,
+        name: resp.name,
+        symbol: resp.symbol,
+        uri: metadataUri,
+        sellerFeeBasisPoints: percentAmount(2.5),
+        isMutable: true,
+      }).sendAndConfirm(umi);
+
+      console.log("NFT minted successfully");
+    } catch (error) {
+      console.error("Error in generateNft:", error);
     }
   };
 
@@ -265,14 +305,22 @@ export default function NFTMetadataAssistant() {
                                               variant="ghost"
                                               size="icon"
                                               className="h-6 w-6 bg-white/80 dark:bg-black/50 rounded-full"
-                                              onClick={() =>
-                                                copyToClipboard(
-                                                  JSON.stringify(
-                                                    jsonContent,
-                                                    null,
-                                                    2
+                                              onClick={
+                                                () =>
+                                                  generateNft(
+                                                    JSON.stringify(
+                                                      jsonContent,
+                                                      null,
+                                                      2
+                                                    )
                                                   )
-                                                )
+                                                // copyToClipboard(
+                                                //   JSON.stringify(
+                                                //     jsonContent,
+                                                //     null,
+                                                //     2
+                                                //   )
+                                                // )
                                               }
                                             >
                                               <Copy className="h-3 w-3" />

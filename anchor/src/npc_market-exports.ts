@@ -14,7 +14,7 @@ export function getNpcMarketProgram(
   provider: AnchorProvider,
   address?: PublicKey
 ) {
-  return new Program(
+  return new Program<NpcMarket>(
     {
       ...NpcMarketIDL,
       address: address ? address.toBase58() : NpcMarketIDL.address,
@@ -27,6 +27,8 @@ export function getNpcMarketProgram(
 export function getNpcMarketProgramId(cluster: Cluster) {
   switch (cluster) {
     case "devnet":
+      return new PublicKey(NpcMarketIDL.address);
+
     case "testnet":
       // This is the program ID for the NpcMarket program on devnet and testnet.
       return new PublicKey(NpcMarketIDL.address);

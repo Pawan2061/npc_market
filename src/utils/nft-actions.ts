@@ -3,6 +3,7 @@ import {
   PublicKey,
   Transaction,
   SystemProgram,
+  LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 import { WalletContextState } from "@solana/wallet-adapter-react";
 import { Program } from "@coral-xyz/anchor";
@@ -138,17 +139,26 @@ export const executeMintNftAction = async (
   wallet: WalletContextState,
   connection: Connection
 ) => {
-  if (!wallet.signTransaction) {
-    throw new Error("Wallet does not support signing transactions");
-  }
-
   try {
+    if (!wallet.signTransaction) {
+      throw new Error("Wallet does not support signing transactions");
+    }
+    const latestBlockHash = await connection.getLatestBlockhash();
+
     const signedCreateMintTx = await wallet.signTransaction(createMintTx);
     signedCreateMintTx.partialSign(mint);
     const createMintTxId = await connection.sendRawTransaction(
       signedCreateMintTx.serialize()
     );
-    await connection.confirmTransaction(createMintTxId, "confirmed");
+    const airdropSignature = await connection.requestAirdrop(
+      mint.publicKey,
+      2 * LAMPORTS_PER_SOL
+    );
+    await connection.confirmTransaction({
+      blockhash: latestBlockHash.blockhash,
+      lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+      signature: airdropSignature,
+    });
 
     const signedMintTx = await wallet.signTransaction(mintTx);
     const mintTxId = await connection.sendRawTransaction(
