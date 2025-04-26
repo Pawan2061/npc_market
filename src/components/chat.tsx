@@ -104,6 +104,7 @@ export default function NFTMetadataAssistant() {
         image: resp.image,
         price: 0,
         isSold: false,
+        symbol: resp.symbol,
         owner: wallet.adapter.publicKey
           ? wallet.adapter.publicKey.toString()
           : "",

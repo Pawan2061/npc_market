@@ -48,7 +48,7 @@ function NftCard() {
           </Tilt>
           <div className="flex flex-col p-4 space-y-2">
             <h3 className="font-mono text-md font-semibold text-zinc-300 truncate">
-              {nft.name}
+              {nft.name} <span className="font-semibold">{nft.symbol}</span>
             </h3>
             <p className="text-sm text-zinc-400 line-clamp-2">
               {nft.description}
