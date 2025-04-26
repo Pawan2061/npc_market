@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 
 function NftCard() {
   const nfts = useNFTStore((state) => state.nfts);
+  console.log(nfts, "are here boiz");
+
   const sellNFT = useNFTStore((state) => state.sellNFT);
 
   const handleBuy = (id: number) => {
@@ -52,7 +54,8 @@ function NftCard() {
               {nft.description}
             </p>
             <div className="text-sm text-zinc-400">
-              <span className="font-semibold">Price:</span> {nft.price}
+              <span className="font-semibold">Price:</span> {nft.price}{" "}
+              <span className="text-green-400">SOL</span>
             </div>
             <div className="text-sm text-zinc-400">
               {nft.isSold ? (

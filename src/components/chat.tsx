@@ -25,8 +25,10 @@ import {
   mplTokenMetadata,
 } from "@metaplex-foundation/mpl-token-metadata";
 import { clusterApiUrl } from "@solana/web3.js";
+import { useNFTStore } from "@/store/nftStore";
 
 export default function NFTMetadataAssistant() {
+  const { addNFT } = useNFTStore();
   const { program } = useNpcMarketProgram();
   const { wallet } = useWallet();
   if (!wallet?.adapter) {
@@ -95,6 +97,17 @@ export default function NFTMetadataAssistant() {
         isMutable: true,
       }).sendAndConfirm(umi);
 
+      addNFT({
+        id: Date.now(),
+        name: resp.name,
+        description: resp.description,
+        image: resp.image,
+        price: 0,
+        isSold: false,
+        owner: wallet.adapter.publicKey
+          ? wallet.adapter.publicKey.toString()
+          : "",
+      });
       console.log("NFT minted successfully");
     } catch (error) {
       console.error("Error in generateNft:", error);

@@ -5,7 +5,7 @@ type NFT = {
   name: string;
   description: string;
   image: string;
-  price: string;
+  price: number;
   owner?: string;
   isSold: boolean;
 };
@@ -25,7 +25,7 @@ export const useNFTStore = create<NFTStore>((set, get) => ({
       name: "Cosmic Explorer",
       description: "A digital explorer traversing the cosmos",
       image: "https://picsum.photos/seed/cosmic/800/800",
-      price: "0.5 SOL",
+      price: 0.5,
       isSold: false,
       owner: undefined,
     },
@@ -34,7 +34,7 @@ export const useNFTStore = create<NFTStore>((set, get) => ({
       name: "Digital Dreamer",
       description: "A surreal digital art piece",
       image: "https://picsum.photos/seed/dreamer/800/800",
-      price: "0.3 SOL",
+      price: 0.3,
       isSold: false,
       owner: undefined,
     },
@@ -43,7 +43,7 @@ export const useNFTStore = create<NFTStore>((set, get) => ({
       name: "Neon Warrior",
       description: "A cyberpunk warrior in neon lights",
       image: "https://picsum.photos/seed/neon/800/800",
-      price: "0.7 SOL",
+      price: 0.7,
       isSold: false,
       owner: undefined,
     },
@@ -52,7 +52,7 @@ export const useNFTStore = create<NFTStore>((set, get) => ({
       name: "Abstract Mind",
       description: "An abstract representation of consciousness",
       image: "https://picsum.photos/seed/abstract/800/800",
-      price: "0.4 SOL",
+      price: 0.4,
       isSold: false,
       owner: undefined,
     },
