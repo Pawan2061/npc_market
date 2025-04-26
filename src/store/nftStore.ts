@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-type NFT = {
+export type NFT = {
   id: number;
   name: string;
   description: string;
@@ -15,6 +15,7 @@ type NFT = {
 type NFTStore = {
   nfts: NFT[];
   getNFTs: () => NFT[];
+  getNFTById: (id: number) => NFT | undefined;
   addNFT: (nft: NFT) => void;
   updateNFT: (id: number, data: Partial<NFT>) => void;
   sellNFT: (id: number, newOwner: string) => void;
@@ -66,6 +67,7 @@ export const useNFTStore = create<NFTStore>()(
         },
       ],
       getNFTs: () => get().nfts,
+      getNFTById: (id) => get().nfts.find((nft) => nft.id === id),
       addNFT: (nft) =>
         set((state) => ({
           nfts: [...state.nfts, nft],

@@ -1,19 +1,22 @@
 import { Tilt } from "@/components/ui/tilt";
 import { Spotlight } from "./ui/spotlight";
-import { useNFTStore } from "@/store/nftStore";
+import { NFT, useNFTStore } from "@/store/nftStore";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, ShoppingCart } from "lucide-react";
 import { useState } from "react";
 import { AnimatedModalDemo } from "./nft-update";
+import { ModalTrigger } from "./ui/animated-modal";
 
 function NftCard() {
   const nfts = useNFTStore((state) => state.nfts);
-  const [show, setShow] = useState(false);
+  const [selectedNft, setSelectedNft] = useState<NFT | null | undefined>(null);
+  const { getNFTById } = useNFTStore();
   const sellNFT = useNFTStore((state) => state.sellNFT);
+  const [show, setShow] = useState(false);
 
   const handleBuy = (id: number) => {
-    console.log("logging is done here");
-    setShow(!show);
+    const nft = getNFTById(id);
+    setSelectedNft(nft); // Set the selected NFT
   };
 
   return (
@@ -78,7 +81,12 @@ function NftCard() {
               </div>
 
               <div className="flex gap-2">
-                <AnimatedModalDemo />
+                {/* <AnimatedModalDemo selectedNft={selectedNft} />{" "} */}
+                <>
+                  <AnimatedModalDemo selectedNft={selectedNft} />
+                </>
+
+                {/* Pass selectedNft */}
                 <Button
                   onClick={() => handleBuy(nft.id)}
                   className="px-4 py-2 mt-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center gap-1 text-sm"
@@ -88,7 +96,6 @@ function NftCard() {
                   Bid
                 </Button>
               </div>
-              {/* )} */}
             </div>
           </div>
         </div>
