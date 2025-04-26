@@ -55,7 +55,7 @@ export default function PhantomNavbar() {
   }, [connected, publicKey]);
 
   return (
-    <nav className="bg-slate-900 text-white shadow-md">
+    <nav className="bg-slate-900 text-white shadow-md overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">

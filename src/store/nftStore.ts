@@ -84,7 +84,7 @@ export const useNFTStore = create<NFTStore>()(
         })),
     }),
     {
-      name: "nft-storage", // storage key in localStorage
+      name: "nft-storage",
     }
   )
 );
