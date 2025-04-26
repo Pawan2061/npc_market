@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, ShoppingCart } from "lucide-react";
 import { containerVariants, fadeInUp, itemVariants } from "@/utils/motion";
+import { AnimatedModalDemo } from "@/components/nft-update";
 
 export default function Home() {
   return (

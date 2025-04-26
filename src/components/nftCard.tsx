@@ -3,13 +3,17 @@ import { Spotlight } from "./ui/spotlight";
 import { useNFTStore } from "@/store/nftStore";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, ShoppingCart } from "lucide-react";
+import { useState } from "react";
+import { AnimatedModalDemo } from "./nft-update";
 
 function NftCard() {
   const nfts = useNFTStore((state) => state.nfts);
+  const [show, setShow] = useState(false);
   const sellNFT = useNFTStore((state) => state.sellNFT);
 
   const handleBuy = (id: number) => {
-    sellNFT(id, "0xUserWalletAddress");
+    console.log("logging is done here");
+    setShow(!show);
   };
 
   return (
@@ -73,33 +77,18 @@ function NftCard() {
                 </div>
               </div>
 
-              {nft.isSold ? (
-                <div className="text-xs bg-zinc-800 px-3 py-2 rounded-lg text-zinc-400">
-                  Owned by{" "}
-                  <span className="text-green-400 font-medium">
-                    {nft.owner?.substring(0, 6)}...
-                  </span>
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => handleBuy(nft.id)}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg flex items-center gap-1 text-sm"
-                    variant="default"
-                  >
-                    {/* <ShoppingCart size={14} /> */}
-                    Up +
-                  </Button>
-                  <Button
-                    onClick={() => handleBuy(nft.id)}
-                    className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center gap-1 text-sm"
-                    variant="default"
-                  >
-                    <PlusCircle size={14} />
-                    Bid
-                  </Button>
-                </div>
-              )}
+              <div className="flex gap-2">
+                <AnimatedModalDemo />
+                <Button
+                  onClick={() => handleBuy(nft.id)}
+                  className="px-4 py-2 mt-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center gap-1 text-sm"
+                  variant="default"
+                >
+                  <PlusCircle size={14} />
+                  Bid
+                </Button>
+              </div>
+              {/* )} */}
             </div>
           </div>
         </div>
