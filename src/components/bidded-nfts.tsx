@@ -12,7 +12,7 @@ import { transferSol } from "@/utils/transfer-sol";
 function BiddedNfts() {
   const nfts = useNFTStore((state) => state.nfts);
   const { wallet } = useWallet();
-  const { getNFTsByUser } = useNFTStore();
+  const { getNFTsByUser, removeNFT } = useNFTStore();
   const address: string = wallet?.adapter.publicKey?.toString()!;
   console.log(wallet?.adapter.publicKey);
 
@@ -28,6 +28,9 @@ function BiddedNfts() {
 
     setSelectedNft(nft!);
     setShowModal(true);
+  };
+  const handleRemove = async (id: number) => {
+    removeNFT(id);
   };
 
   const handleSell = async (id: number) => {
@@ -155,7 +158,7 @@ function BiddedNfts() {
                 <div className="flex gap-2">
                   {nft.isSold == IsSold.available && (
                     <Button
-                      onClick={() => handleSelectNft(nft.id)}
+                      onClick={() => handleRemove(nft.id)}
                       className="px-4 py-2 mt-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center gap-1 text-sm"
                       variant="default"
                     >

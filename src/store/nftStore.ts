@@ -27,22 +27,13 @@ type NFTStore = {
   updateNFT: (id: number, data: Partial<NFT>) => void;
   sellNFT: (id: number, newOwner: string) => void;
   getNFTsByUser: (address: string) => NFT[];
+  removeNFT: (id: number) => void; // New method for removing an NFT
 };
 
 export const useNFTStore = create<NFTStore>()(
   persist(
     (set, get) => ({
       nfts: [
-        // {
-        //   id: 1,
-        //   name: "Cosmic Explorer",
-        //   description: "A digital explorer traversing the cosmos",
-        //   image: "https://picsum.photos/seed/cosmic/800/800",
-        //   price: 0.5,
-        //   symbol: "COSNFT",
-        //   isSold: false,
-        //   owner: undefined,
-        // },
         {
           id: 2,
           name: "Digital Dreamer",
@@ -80,7 +71,6 @@ export const useNFTStore = create<NFTStore>()(
         set((state) => ({
           nfts: [...state.nfts, nft],
         })),
-
       getNFTsByUser: (address) =>
         get().nfts.filter((nft) => nft.owner === address),
       updateNFT: (id, data) =>
@@ -96,6 +86,10 @@ export const useNFTStore = create<NFTStore>()(
               ? { ...nft, isSold: IsSold.sold, owner: newOwner }
               : nft
           ),
+        })),
+      removeNFT: (id) =>
+        set((state) => ({
+          nfts: state.nfts.filter((nft) => nft.id !== id),
         })),
     }),
     {
