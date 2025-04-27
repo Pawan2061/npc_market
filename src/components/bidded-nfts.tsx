@@ -67,6 +67,24 @@ function BiddedNfts() {
                   Available
                 </div>
               )}
+              {nft.isSold === IsSold.available && (
+                <div className="absolute top-4 right-4 bg-green-500/90 text-white text-xs font-medium px-2 py-1 rounded-full z-20">
+                  Available
+                </div>
+              )}
+              {nft.isSold === IsSold.bidded && (
+                <div className="absolute top-4 right-4 bg-yellow-500/90 text-white text-xs font-medium px-2 py-1 rounded-full z-20">
+                  Bidded by{" "}
+                  {nft.biddedBy
+                    ? `${nft.biddedBy.slice(0, 6)}...${nft.biddedBy.slice(-4)}`
+                    : "N/A"}
+                </div>
+              )}
+              {nft.isSold === IsSold.sold && (
+                <div className="absolute top-4 right-4 bg-red-500/90 text-white text-xs font-medium px-2 py-1 rounded-full z-20">
+                  Sold
+                </div>
+              )}
             </Tilt>
             <div className="flex flex-col p-5 space-y-3">
               <div className="flex justify-between items-center">

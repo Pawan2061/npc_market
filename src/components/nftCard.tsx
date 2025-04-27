@@ -5,10 +5,14 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 function NftCard() {
   const nfts = useNFTStore((state) => state.nfts);
-  console.log(nfts, "will be here");
+  console.log(nfts, "printing it");
+
+  const updateNFT = useNFTStore((state) => state.updateNFT);
+  const { wallet } = useWallet();
 
   const [selectedNft, setSelectedNft] = useState<NFT | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -18,6 +22,16 @@ function NftCard() {
     const nft = getNFTById(id);
     setSelectedNft(nft!);
     setShowModal(true);
+  };
+
+  const handlePlaceBid = () => {
+    if (selectedNft && wallet?.adapter.publicKey) {
+      updateNFT(selectedNft.id, {
+        isSold: IsSold.bidded,
+        biddedBy: wallet.adapter.publicKey.toString(),
+      });
+      setShowModal(false);
+    }
   };
 
   return (
@@ -54,9 +68,19 @@ function NftCard() {
                 alt={nft.name}
                 className="h-full w-full object-cover grayscale group-hover:grayscale-0 transition duration-700 scale-100 group-hover:scale-105"
               />
-              {!nft.isSold && (
+              {nft.isSold === IsSold.available && (
                 <div className="absolute top-4 right-4 bg-green-500/90 text-white text-xs font-medium px-2 py-1 rounded-full z-20">
                   Available
+                </div>
+              )}
+              {nft.isSold === IsSold.bidded && (
+                <div className="absolute top-4 right-4 bg-yellow-500/90 text-white text-xs font-medium px-2 py-1 rounded-full z-20">
+                  Bidded
+                </div>
+              )}
+              {nft.isSold === IsSold.sold && (
+                <div className="absolute top-4 right-4 bg-red-500/90 text-white text-xs font-medium px-2 py-1 rounded-full z-20">
+                  Sold
                 </div>
               )}
             </Tilt>
@@ -83,23 +107,41 @@ function NftCard() {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button
-                    onClick={() => handleSelectNft(nft.id)}
-                    className="px-4 py-2 mt-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center gap-1 text-sm"
-                    variant="default"
-                  >
-                    <PlusCircle size={14} />
-                    Bid
-                  </Button>
+                  {nft.isSold === IsSold.available && (
+                    <>
+                      <Button
+                        onClick={() => handleSelectNft(nft.id)}
+                        className="px-4 py-2 mt-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center gap-1 text-sm"
+                        variant="default"
+                      >
+                        <PlusCircle size={14} />
+                        Bid
+                      </Button>
 
-                  <Button
-                    onClick={() => handleSelectNft(nft.id)}
-                    className="px-4 py-2 mt-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center gap-1 text-sm"
-                    variant="default"
-                  >
-                    <PlusCircle size={14} />
-                    Up
-                  </Button>
+                      <Button
+                        onClick={() => handleSelectNft(nft.id)}
+                        className="px-4 py-2 mt-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center gap-1 text-sm"
+                        variant="default"
+                      >
+                        <PlusCircle size={14} />
+                        Up
+                      </Button>
+                    </>
+                  )}
+                  {nft.isSold === IsSold.bidded && (
+                    <span className="text-xs font-medium px-2 py-1 bg-yellow-600 rounded-md text-white">
+                      {/* {wallet?.adapter.publicKey &&
+                          `${wallet.adapter.publicKey
+                            .toString()
+                            .slice(0, 4)}...${wallet.adapter.publicKey
+                            .toString()
+                            .slice(-4)}`} */}
+                      {nft.biddedBy &&
+                        `${nft.biddedBy.slice(0, 4)}...${nft.biddedBy.slice(
+                          -4
+                        )}`}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -164,9 +206,8 @@ function NftCard() {
               </Button>
               <Button
                 variant="default"
-                onClick={() => {
-                  IsSold.bidded;
-                }}
+                onClick={handlePlaceBid}
+                disabled={!wallet?.adapter.publicKey}
                 className="w-28 bg-black text-white dark:bg-white dark:text-black border border-black"
               >
                 Place Bid

@@ -16,6 +16,7 @@ export type NFT = {
   owner?: string;
   symbol: string;
   isSold: IsSold;
+  biddedBy?: string;
 };
 
 type NFTStore = {
@@ -25,7 +26,7 @@ type NFTStore = {
   addNFT: (nft: NFT) => void;
   updateNFT: (id: number, data: Partial<NFT>) => void;
   sellNFT: (id: number, newOwner: string) => void;
-  getNFTsByUser: (address: string) => NFT[]; // <- ADDED this
+  getNFTsByUser: (address: string) => NFT[];
 };
 
 export const useNFTStore = create<NFTStore>()(

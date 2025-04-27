@@ -25,7 +25,7 @@ import {
   mplTokenMetadata,
 } from "@metaplex-foundation/mpl-token-metadata";
 import { clusterApiUrl } from "@solana/web3.js";
-import { useNFTStore } from "@/store/nftStore";
+import { IsSold, useNFTStore } from "@/store/nftStore";
 
 export default function NFTMetadataAssistant() {
   const { addNFT } = useNFTStore();
@@ -103,7 +103,7 @@ export default function NFTMetadataAssistant() {
         description: resp.description,
         image: resp.image,
         price: 0,
-        isSold: false,
+        isSold: IsSold.available,
         symbol: resp.symbol,
         owner: wallet.adapter.publicKey
           ? wallet.adapter.publicKey.toString()
