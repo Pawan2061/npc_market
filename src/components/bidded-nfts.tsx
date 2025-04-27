@@ -7,6 +7,7 @@ import { PlusCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { transferSol } from "@/utils/transfer-sol";
 
 function BiddedNfts() {
   const nfts = useNFTStore((state) => state.nfts);
@@ -24,10 +25,48 @@ function BiddedNfts() {
 
   const handleSelectNft = (id: number) => {
     const nft = getNFTById(id);
+
     setSelectedNft(nft!);
     setShowModal(true);
   };
 
+  const handleSell = async (id: number) => {
+    const nft = getNFTById(id);
+
+    if (nft && nft.isSold === IsSold.bidded) {
+      // Ensure the seller is the wallet's current address
+      const sellerAddress = wallet?.adapter.publicKey?.toString();
+      if (!sellerAddress) {
+        console.error("No wallet connected");
+        return;
+      }
+
+      // Ensure the NFT was bidded on by someone else
+      if (nft.biddedBy && sellerAddress !== nft.biddedBy) {
+        // Get the bidder's address
+        const bidderAddress = nft.biddedBy;
+
+        // Proceed with ownership transfer and marking as sold
+        try {
+          // Directly access the store and call sellNFT
+          useNFTStore.getState().sellNFT(id, bidderAddress);
+
+          // Now initiate the SOL transfer (you would need to handle the payment logic)
+          await transferSol(nft.price, bidderAddress); // Send the bid amount to the seller
+
+          console.log(
+            `Successfully transferred ${nft.price} SOL from ${bidderAddress} to ${sellerAddress}`
+          );
+        } catch (error) {
+          console.error("Error during sale:", error);
+        }
+      } else {
+        console.log("You cannot sell your own NFT.");
+      }
+    } else {
+      console.log("NFT is not in a bidded state.");
+    }
+  };
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-8 w-full">
@@ -72,6 +111,11 @@ function BiddedNfts() {
                   Available
                 </div>
               )}
+              {nft.isSold === IsSold.sold && (
+                <div className="absolute top-4 right-4 bg-red-500/90 text-white text-xs font-medium px-2 py-1 rounded-full z-20">
+                  Sold
+                </div>
+              )}
               {nft.isSold === IsSold.bidded && (
                 <div className="absolute top-4 right-4 bg-yellow-500/90 text-white text-xs font-medium px-2 py-1 rounded-full z-20">
                   Bidded by{" "}
@@ -109,23 +153,45 @@ function BiddedNfts() {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button
-                    onClick={() => handleSelectNft(nft.id)}
-                    className="px-4 py-2 mt-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center gap-1 text-sm"
-                    variant="default"
-                  >
-                    <PlusCircle size={14} />
-                    Bid
-                  </Button>
+                  {nft.isSold == IsSold.available && (
+                    <Button
+                      onClick={() => handleSelectNft(nft.id)}
+                      className="px-4 py-2 mt-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center gap-1 text-sm"
+                      variant="default"
+                    >
+                      <PlusCircle size={14} />
+                      Remove
+                    </Button>
+                  )}
+                  {nft.isSold == IsSold.bidded && (
+                    <Button
+                      onClick={() => handleSell(nft.id)}
+                      className="px-4 py-2 mt-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center gap-1 text-sm"
+                      variant="default"
+                    >
+                      <PlusCircle size={14} />
+                      Sell
+                    </Button>
+                  )}
 
+                  {/* <Button
+                    onClick={() => handleSelectNft(nft.id)}
+                    className="px-4 py-2 mt-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center gap-1 text-sm"
+                    variant="default"
+                  >
+                    <PlusCircle size={14} />
+                    Sell
+                  </Button> */}
+
+                  {/* 
                   <Button
                     onClick={() => handleSelectNft(nft.id)}
                     className="px-4 py-2 mt-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center gap-1 text-sm"
                     variant="default"
                   >
                     <PlusCircle size={14} />
-                    Up
-                  </Button>
+                    Up */}
+                  {/* </Button> */}
                 </div>
               </div>
             </div>
