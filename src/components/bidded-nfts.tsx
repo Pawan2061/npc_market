@@ -1,3 +1,4 @@
+"use client";
 import { Tilt } from "@/components/ui/tilt";
 import { Spotlight } from "./ui/spotlight";
 import { IsSold, NFT, useNFTStore } from "@/store/nftStore";
@@ -5,10 +6,17 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useWallet } from "@solana/wallet-adapter-react";
 
-function NftCard() {
+function BiddedNfts() {
   const nfts = useNFTStore((state) => state.nfts);
-  console.log(nfts, "will be here");
+  const { wallet } = useWallet();
+  const { getNFTsByUser } = useNFTStore();
+  const address: string = wallet?.adapter.publicKey?.toString()!;
+  console.log(wallet?.adapter.publicKey);
+
+  const nftsbyUser = getNFTsByUser(address);
+  console.log(nftsbyUser, "is here boiz");
 
   const [selectedNft, setSelectedNft] = useState<NFT | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -23,9 +31,9 @@ function NftCard() {
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-8 w-full">
-        {nfts.map((nft) => (
+        {nftsbyUser.map((nft) => (
           <div
-            key={nft.id}
+            key={nft?.id}
             className="flex flex-col rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-800 shadow-xl hover:shadow-2xl transition-all duration-300 border border-zinc-800 hover:border-zinc-700 group"
           >
             <Tilt
@@ -179,4 +187,4 @@ function NftCard() {
   );
 }
 
-export { NftCard };
+export { BiddedNfts };

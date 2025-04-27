@@ -1,6 +1,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+export enum IsSold {
+  available,
+  bidded,
+  sold,
+}
+
 export type NFT = {
   id: number;
   name: string;
@@ -9,7 +15,7 @@ export type NFT = {
   price: number;
   owner?: string;
   symbol: string;
-  isSold: boolean;
+  isSold: IsSold;
 };
 
 type NFTStore = {
@@ -19,22 +25,23 @@ type NFTStore = {
   addNFT: (nft: NFT) => void;
   updateNFT: (id: number, data: Partial<NFT>) => void;
   sellNFT: (id: number, newOwner: string) => void;
+  getNFTsByUser: (address: string) => NFT[]; // <- ADDED this
 };
 
 export const useNFTStore = create<NFTStore>()(
   persist(
     (set, get) => ({
       nfts: [
-        {
-          id: 1,
-          name: "Cosmic Explorer",
-          description: "A digital explorer traversing the cosmos",
-          image: "https://picsum.photos/seed/cosmic/800/800",
-          price: 0.5,
-          symbol: "COSNFT",
-          isSold: false,
-          owner: undefined,
-        },
+        // {
+        //   id: 1,
+        //   name: "Cosmic Explorer",
+        //   description: "A digital explorer traversing the cosmos",
+        //   image: "https://picsum.photos/seed/cosmic/800/800",
+        //   price: 0.5,
+        //   symbol: "COSNFT",
+        //   isSold: false,
+        //   owner: undefined,
+        // },
         {
           id: 2,
           name: "Digital Dreamer",
@@ -42,7 +49,7 @@ export const useNFTStore = create<NFTStore>()(
           image: "https://picsum.photos/seed/dreamer/800/800",
           price: 0.3,
           symbol: "DREAMNFT",
-          isSold: false,
+          isSold: IsSold.available,
           owner: undefined,
         },
         {
@@ -52,7 +59,7 @@ export const useNFTStore = create<NFTStore>()(
           image: "https://picsum.photos/seed/neon/800/800",
           price: 0.7,
           symbol: "DREAMNFT",
-          isSold: false,
+          isSold: IsSold.available,
           owner: undefined,
         },
         {
@@ -62,7 +69,7 @@ export const useNFTStore = create<NFTStore>()(
           image: "https://picsum.photos/seed/abstract/800/800",
           price: 0.4,
           symbol: "DREAMNFT",
-          isSold: false,
+          isSold: IsSold.available,
           owner: undefined,
         },
       ],
@@ -72,6 +79,9 @@ export const useNFTStore = create<NFTStore>()(
         set((state) => ({
           nfts: [...state.nfts, nft],
         })),
+
+      getNFTsByUser: (address) =>
+        get().nfts.filter((nft) => nft.owner === address),
       updateNFT: (id, data) =>
         set((state) => ({
           nfts: state.nfts.map((nft) =>
@@ -81,7 +91,9 @@ export const useNFTStore = create<NFTStore>()(
       sellNFT: (id, newOwner) =>
         set((state) => ({
           nfts: state.nfts.map((nft) =>
-            nft.id === id ? { ...nft, isSold: true, owner: newOwner } : nft
+            nft.id === id
+              ? { ...nft, isSold: IsSold.sold, owner: newOwner }
+              : nft
           ),
         })),
     }),
