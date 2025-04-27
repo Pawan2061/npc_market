@@ -11,20 +11,17 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 
 type AnimatedModalDemoProps = {
-  selectedNft: any; // Accept the selected NFT as a prop
+  selectedNft: any;
 };
 
 export function AnimatedModalDemo({ selectedNft }: AnimatedModalDemoProps) {
-  // if (!selectedNft) return null; // If no NFT is selected, don't render the modal
-  console.log(selectedNft, "is here");
-
   return (
     <div className="flex items-center justify-center">
       <Modal>
         <ModalBody>
           <ModalContent>
             <h4 className="text-lg md:text-2xl text-neutral-600 dark:text-neutral-100 font-bold text-center mb-8">
-              {selectedNft.name}
+              {/* {selectedNft.name} */} name
             </h4>
             <div className="flex justify-center items-center">
               <motion.div
@@ -56,7 +53,7 @@ export function AnimatedModalDemo({ selectedNft }: AnimatedModalDemoProps) {
             <div className="py-10 flex flex-wrap gap-x-4 gap-y-6 items-start justify-start max-w-sm mx-auto">
               <div className="flex items-center justify-center">
                 <span className="text-neutral-700 dark:text-neutral-300 text-sm">
-                  Price: {selectedNft.price} SOL
+                  Price: 0 SOL
                 </span>
               </div>
             </div>
