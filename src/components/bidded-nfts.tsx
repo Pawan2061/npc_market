@@ -11,7 +11,7 @@ import { transferSol } from "@/utils/transfer-sol";
 
 function BiddedNfts() {
   const nfts = useNFTStore((state) => state.nfts);
-  const { wallet } = useWallet();
+  const { wallet, signMessage } = useWallet();
   const { getNFTsByUser, removeNFT } = useNFTStore();
   const address: string = wallet?.adapter.publicKey?.toString()!;
   console.log(wallet?.adapter.publicKey);
@@ -29,33 +29,43 @@ function BiddedNfts() {
     setSelectedNft(nft!);
     setShowModal(true);
   };
-  const handleRemove = async (id: number) => {
-    removeNFT(id);
-  };
+  async function handleRemove(id: number) {
+    if (!signMessage) {
+      console.error("Wallet does not support message signing");
+      return;
+    }
+
+    const message = `Approve removal of NFT with ID: ${id}`;
+    const encodedMessage = new TextEncoder().encode(message);
+
+    try {
+      const signature = await signMessage(encodedMessage);
+      console.log("Signature:", Buffer.from(signature).toString("hex"));
+
+      removeNFT(id);
+      console.log(`NFT with ID ${id} removed`);
+    } catch (error) {
+      console.error("User rejected signing or error occurred", error);
+    }
+  }
 
   const handleSell = async (id: number) => {
     const nft = getNFTById(id);
 
     if (nft && nft.isSold === IsSold.bidded) {
-      // Ensure the seller is the wallet's current address
       const sellerAddress = wallet?.adapter.publicKey?.toString();
       if (!sellerAddress) {
         console.error("No wallet connected");
         return;
       }
 
-      // Ensure the NFT was bidded on by someone else
       if (nft.biddedBy && sellerAddress !== nft.biddedBy) {
-        // Get the bidder's address
         const bidderAddress = nft.biddedBy;
 
-        // Proceed with ownership transfer and marking as sold
         try {
-          // Directly access the store and call sellNFT
           useNFTStore.getState().sellNFT(id, bidderAddress);
 
-          // Now initiate the SOL transfer (you would need to handle the payment logic)
-          await transferSol(nft.price, bidderAddress); // Send the bid amount to the seller
+          await transferSol(nft.price, bidderAddress);
 
           console.log(
             `Successfully transferred ${nft.price} SOL from ${bidderAddress} to ${sellerAddress}`
@@ -159,7 +169,7 @@ function BiddedNfts() {
                   {nft.isSold == IsSold.available && (
                     <Button
                       onClick={() => handleRemove(nft.id)}
-                      className="px-4 py-2 mt-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center gap-1 text-sm"
+                      className="px-4 py-2 mt-2 bg-red-800 hover:bg-red-700 text-white rounded-lg flex items-center gap-1 text-sm"
                       variant="default"
                     >
                       <PlusCircle size={14} />
