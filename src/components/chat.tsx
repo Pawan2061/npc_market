@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,17 +9,13 @@ import { Send, Download, Copy, MoveRight, PhoneCall } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { UIMessage } from "ai";
 import { motion, AnimatePresence } from "framer-motion";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { useRouter } from "next/navigation";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { MintNftArgs, NFTMetadata } from "@/types/nft";
 import { uploadToIPFS } from "@/utils/ipfs";
-import { getNpcMarketProgram } from "@project/anchor";
 import { useNpcMarketProgram } from "./npc_market/npc_market-data-access";
-import { createMintNftAction, executeMintNftAction } from "@/utils/nft-actions";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { generateSigner, percentAmount } from "@metaplex-foundation/umi";
-import { Wallet } from "@coral-xyz/anchor";
 import {
   createNft,
   mplTokenMetadata,
@@ -88,7 +84,7 @@ export default function NFTMetadataAssistant() {
       const metadataUri = `https://ipfs.io/ipfs/${ipfsHash}`;
       console.log(resp, "Minting with metadata URI:", metadataUri);
 
-      await createNft(umi, {
+      const mintedNftAddress = await createNft(umi, {
         mint,
         name: resp.name,
         symbol: resp.symbol,
@@ -108,6 +104,7 @@ export default function NFTMetadataAssistant() {
         owner: wallet.adapter.publicKey
           ? wallet.adapter.publicKey.toString()
           : "",
+        mintedNftAddress: mint.publicKey,
       });
       console.log("NFT minted successfully");
     } catch (error) {
@@ -320,20 +317,6 @@ export default function NFTMetadataAssistant() {
             </motion.div>
           </Card>
         </motion.div>
-
-        {/* <AnimatePresence>
-          {copied && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              transition={{ type: "spring", stiffness: 500, damping: 15 }}
-              className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg"
-            >
-              Copied to clipboard!
-            </motion.div>
-          )}
-        </AnimatePresence> */}
       </motion.div>
     </div>
   );

@@ -17,6 +17,7 @@ export type NFT = {
   symbol: string;
   isSold: IsSold;
   biddedBy?: string;
+  mintedNftAddress: string;
 };
 
 type NFTStore = {
@@ -43,6 +44,7 @@ export const useNFTStore = create<NFTStore>()(
           symbol: "DREAMNFT",
           isSold: IsSold.available,
           owner: undefined,
+          mintedNftAddress: "",
         },
         {
           id: 3,
@@ -53,6 +55,7 @@ export const useNFTStore = create<NFTStore>()(
           symbol: "DREAMNFT",
           isSold: IsSold.available,
           owner: undefined,
+          mintedNftAddress: "",
         },
         {
           id: 4,
@@ -63,6 +66,7 @@ export const useNFTStore = create<NFTStore>()(
           symbol: "DREAMNFT",
           isSold: IsSold.available,
           owner: undefined,
+          mintedNftAddress: "",
         },
       ],
       getNFTs: () => get().nfts,

@@ -2,26 +2,60 @@ import { Tilt } from "@/components/ui/tilt";
 import { Spotlight } from "./ui/spotlight";
 import { IsSold, NFT, useNFTStore } from "@/store/nftStore";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { PlusCircle, Edit } from "lucide-react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
+import { clusterApiUrl, PublicKey } from "@solana/web3.js";
+import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
+import {
+  fetchDigitalAsset,
+  mplTokenMetadata,
+  updateV1,
+} from "@metaplex-foundation/mpl-token-metadata";
+import { publicKey } from "@metaplex-foundation/umi";
+import { uploadToIPFS } from "@/utils/ipfs";
 
 function NftCard() {
   const nfts = useNFTStore((state) => state.nfts);
-  console.log(nfts, "printing it");
-
+  const { wallet, signMessage } = useWallet();
   const updateNFT = useNFTStore((state) => state.updateNFT);
-  const { wallet } = useWallet();
+  const { getNFTById } = useNFTStore();
 
   const [selectedNft, setSelectedNft] = useState<NFT | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const { getNFTById } = useNFTStore();
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+
+  const priceInputRef = useRef<HTMLInputElement>(null);
+
+  const getUmi = () => {
+    if (!wallet?.adapter) {
+      return null;
+    }
+
+    return createUmi(clusterApiUrl("devnet"))
+      .use(walletAdapterIdentity(wallet.adapter))
+      .use(mplTokenMetadata());
+  };
 
   const handleSelectNft = (id: number) => {
     const nft = getNFTById(id);
-    setSelectedNft(nft!);
-    setShowModal(true);
+    if (nft) {
+      setSelectedNft(nft);
+      setShowModal(true);
+    }
+  };
+
+  const handleUpdate = (id: number) => {
+    const nft = getNFTById(id);
+    if (nft) {
+      setSelectedNft(nft);
+      setShowUpdateModal(true);
+      setUpdateError(null);
+    }
   };
 
   const handlePlaceBid = () => {
@@ -33,6 +67,106 @@ function NftCard() {
       setShowModal(false);
     }
   };
+
+  const handleConfirmUpdate = async () => {
+    if (!selectedNft || !priceInputRef.current) {
+      return;
+    }
+
+    const newPrice = parseFloat(priceInputRef.current.value);
+    if (isNaN(newPrice) || newPrice <= 0) {
+      setUpdateError("Please enter a valid price");
+      return;
+    }
+
+    if (selectedNft.owner != wallet?.adapter.publicKey) {
+      throw new Error("you cannot update it");
+    }
+
+    setUpdating(true);
+    setUpdateError(null);
+
+    try {
+      updateNFT(selectedNft.id, {
+        price: newPrice,
+      });
+
+      if (
+        selectedNft.mintedNftAddress &&
+        selectedNft.mintedNftAddress.length > 0
+      ) {
+        const umi = getUmi();
+        if (!umi) {
+          throw new Error("Wallet not connected");
+        }
+
+        try {
+          if (selectedNft.mintedNftAddress.length > 88) {
+            console.log(
+              "This appears to be a transaction signature, not a mint address"
+            );
+            setShowUpdateModal(false);
+            return;
+          }
+
+          try {
+            new PublicKey(selectedNft.mintedNftAddress);
+          } catch (pubkeyError) {
+            console.error("Invalid mint address format:", pubkeyError);
+            setUpdateError(
+              "Invalid NFT address format. Local data updated only."
+            );
+            setShowUpdateModal(false);
+            return;
+          }
+
+          const mintPubkey = publicKey(selectedNft.mintedNftAddress);
+
+          const asset = await fetchDigitalAsset(umi, mintPubkey);
+
+          const metadataResponse = await fetch(asset.metadata.uri);
+          if (!metadataResponse.ok) {
+            throw new Error(
+              `Failed to fetch metadata from ${asset.metadata.uri}`
+            );
+          }
+
+          const metadata = await metadataResponse.json();
+
+          const updatedMetadata = {
+            ...metadata,
+            price: newPrice,
+          };
+
+          const message = `Approve updation of NFT with ID: ${selectedNft.id}`;
+          const encodedMessage = new TextEncoder().encode(message);
+
+          const signature = await signMessage!(encodedMessage);
+          console.log("Signature:", Buffer.from(signature).toString("hex"));
+          const upd = await uploadToIPFS(updatedMetadata);
+        } catch (err) {
+          console.error("Error updating blockchain metadata:", err);
+        }
+      } else {
+        console.log("No mint address available, updated local store only");
+      }
+
+      setShowUpdateModal(false);
+    } catch (error) {
+      console.error("Error updating NFT:", error);
+      setUpdateError("Failed to update NFT. Please try again.");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  if (!wallet?.adapter) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <p className="text-zinc-400">Connect your wallet to view NFTs</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -119,23 +253,17 @@ function NftCard() {
                       </Button>
 
                       <Button
-                        onClick={() => handleSelectNft(nft.id)}
+                        onClick={() => handleUpdate(nft.id)}
                         className="px-4 py-2 mt-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center gap-1 text-sm"
                         variant="default"
                       >
-                        <PlusCircle size={14} />
-                        Up
+                        <Edit size={14} />
+                        Update
                       </Button>
                     </>
                   )}
                   {nft.isSold === IsSold.bidded && (
                     <span className="text-xs font-medium px-2 py-1 bg-yellow-600 rounded-md text-white">
-                      {/* {wallet?.adapter.publicKey &&
-                          `${wallet.adapter.publicKey
-                            .toString()
-                            .slice(0, 4)}...${wallet.adapter.publicKey
-                            .toString()
-                            .slice(-4)}`} */}
                       {nft.biddedBy &&
                         `${nft.biddedBy.slice(0, 4)}...${nft.biddedBy.slice(
                           -4
@@ -211,6 +339,87 @@ function NftCard() {
                 className="w-28 bg-black text-white dark:bg-white dark:text-black border border-black"
               >
                 Place Bid
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showUpdateModal && selectedNft && (
+        <div className="fixed w-full inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <h4 className="text-lg md:text-2xl text-neutral-600 dark:text-neutral-100 font-bold text-center mb-6">
+              Update {selectedNft.name}
+            </h4>
+
+            <div className="flex justify-center items-center">
+              <motion.div
+                key={"update-image"}
+                style={{
+                  rotate: Math.random() * 20 - 10,
+                }}
+                whileHover={{
+                  scale: 1.1,
+                  rotate: 0,
+                  zIndex: 100,
+                }}
+                whileTap={{
+                  scale: 1.1,
+                  rotate: 0,
+                  zIndex: 100,
+                }}
+                className="rounded-xl mt-4 p-1 bg-white dark:bg-neutral-800 dark:border-neutral-700 border border-neutral-100 flex-shrink-0 overflow-hidden"
+              >
+                <img
+                  src={selectedNft.image}
+                  alt={selectedNft.name}
+                  className="rounded-lg h-20 w-20 md:h-40 md:w-40 object-cover flex-shrink-0"
+                />
+              </motion.div>
+            </div>
+
+            <div className="py-8 flex flex-wrap gap-x-4 gap-y-6 items-start justify-start max-w-sm mx-auto">
+              <div className="flex flex-col space-y-2 w-full">
+                <span className="text-neutral-700 dark:text-neutral-300 text-sm">
+                  Current Price: {selectedNft.price} SOL
+                </span>
+
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                    New Price (SOL)
+                  </label>
+                  <input
+                    type="number"
+                    ref={priceInputRef}
+                    step="0.01"
+                    min="0.01"
+                    className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    defaultValue={selectedNft.price}
+                  />
+                </div>
+
+                {updateError && (
+                  <div className="mt-2 text-red-500 text-sm">{updateError}</div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-4 pt-4 border-t border-gray-200 dark:border-zinc-800">
+              <Button
+                variant="secondary"
+                onClick={() => setShowUpdateModal(false)}
+                className="w-28 bg-gray-200 text-black dark:bg-black dark:border-black dark:text-white border border-gray-300"
+                disabled={updating}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="default"
+                onClick={handleConfirmUpdate}
+                className="w-28 bg-black text-white dark:bg-white dark:text-black border border-black"
+                disabled={updating}
+              >
+                {updating ? "Updating..." : "Update"}
               </Button>
             </div>
           </div>

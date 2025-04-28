@@ -186,25 +186,6 @@ function BiddedNfts() {
                       Sell
                     </Button>
                   )}
-
-                  {/* <Button
-                    onClick={() => handleSelectNft(nft.id)}
-                    className="px-4 py-2 mt-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center gap-1 text-sm"
-                    variant="default"
-                  >
-                    <PlusCircle size={14} />
-                    Sell
-                  </Button> */}
-
-                  {/* 
-                  <Button
-                    onClick={() => handleSelectNft(nft.id)}
-                    className="px-4 py-2 mt-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center gap-1 text-sm"
-                    variant="default"
-                  >
-                    <PlusCircle size={14} />
-                    Up */}
-                  {/* </Button> */}
                 </div>
               </div>
             </div>
