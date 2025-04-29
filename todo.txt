@@ -1,2 +1,7 @@
 fix the transfer sol operation for sell
-fix the update operation
+write escrow functionality for buying and selling of nft
+``` buyer makes the bid ,,
+    seller accepts the bid,,
+    sol-> buyer to seller
+    nft-> seller to buyer
+```

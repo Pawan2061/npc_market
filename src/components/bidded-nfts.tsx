@@ -8,6 +8,8 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { transferSol } from "@/utils/transfer-sol";
+import { getNpcMarketProgram } from "@project/anchor";
+import { useNpcMarketProgram } from "./npc_market/npc_market-data-access";
 
 function BiddedNfts() {
   const nfts = useNFTStore((state) => state.nfts);

@@ -1,16 +1,23 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Download, Copy, MoveRight, PhoneCall } from "lucide-react";
+import {
+  Send,
+  Download,
+  Copy,
+  Wand2,
+  Loader2,
+  CircleCheckBig,
+} from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { UIMessage } from "ai";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { MintNftArgs, NFTMetadata } from "@/types/nft";
+import { toast, Toaster } from "sonner";
 import { uploadToIPFS } from "@/utils/ipfs";
 import { useNpcMarketProgram } from "./npc_market/npc_market-data-access";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
@@ -27,9 +34,12 @@ export default function NFTMetadataAssistant() {
   const { addNFT } = useNFTStore();
   const { program } = useNpcMarketProgram();
   const { wallet } = useWallet();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isMinting, setIsMinting] = useState(false);
+
   if (!wallet?.adapter) {
     console.error("Wallet not connected");
-    return;
+    return null;
   }
 
   const umi = createUmi(clusterApiUrl("devnet"))
@@ -40,15 +50,24 @@ export default function NFTMetadataAssistant() {
 
   const systemPrompt = `You are an NFT metadata generator. When the user provides a description, generate JSON metadata including the following fields: "name", "description", "attributes" "symbol", and any other relevant fields for an NFT. Always include an "image" field using the URL format "https://picsum.photos/seed/[SEED]/800/800", where [SEED] is a deterministic string derived from the NFT's name or description (e.g., a slugified version or hash) and a symbol too. Ensure the JSON output is valid and uses double quotes for all property names and string values. The image must match the name or description provided so dont just pick out any random images, read the description carefully and provide the image`;
 
-  const { messages, input, handleInputChange, handleSubmit } = useChat({
-    initialMessages: [
-      {
-        id: "system-1",
-        role: "system",
-        content: systemPrompt,
+  const { messages, input, handleInputChange, handleSubmit, isLoading } =
+    useChat({
+      initialMessages: [
+        {
+          id: "system-1",
+          role: "system",
+          content: systemPrompt,
+        },
+      ],
+      onFinish: () => {
+        toast.success("Metadata generated successfully!");
       },
-    ],
-  });
+      onError: (error) => {
+        toast.error("Failed to generate metadata", {
+          description: error.message,
+        });
+      },
+    });
 
   const extractJSON = (text: string) => {
     try {
@@ -77,12 +96,20 @@ export default function NFTMetadataAssistant() {
       return null;
     }
   };
+
   const generateNft = async (text: string) => {
     try {
+      setIsMinting(true);
+      const mintingToast = toast.loading("Minting your NFT...");
+
       const resp = JSON.parse(text);
       const ipfsHash = await uploadToIPFS(resp);
       const metadataUri = `https://ipfs.io/ipfs/${ipfsHash}`;
-      console.log(resp, "Minting with metadata URI:", metadataUri);
+
+      toast.loading("Uploading to IPFS successful", {
+        id: mintingToast,
+        description: "Now creating on-chain asset...",
+      });
 
       const mintedNftAddress = await createNft(umi, {
         mint,
@@ -106,10 +133,45 @@ export default function NFTMetadataAssistant() {
           : "",
         mintedNftAddress: mint.publicKey,
       });
-      console.log("NFT minted successfully");
+
+      toast.success("NFT minted successfully!", {
+        id: mintingToast,
+        description: `Your ${resp.name} NFT is now on the blockchain`,
+        action: {
+          label: "View Collection",
+          onClick: () => console.log("Navigate to collection"),
+        },
+        duration: 5000,
+      });
     } catch (error) {
       console.error("Error in generateNft:", error);
+      toast.error("Failed to mint NFT", {
+        description:
+          error instanceof Error ? error.message : "Unknown error occurred",
+      });
+    } finally {
+      setIsMinting(false);
     }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard");
+  };
+
+  const downloadJSON = (data: any, filename: string) => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename || "nft-metadata.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("Metadata downloaded");
   };
 
   const getMessageContent = (message: UIMessage) => {
@@ -124,22 +186,40 @@ export default function NFTMetadataAssistant() {
   };
 
   return (
-    <div id="nft-generator" className="bg-muted/40 py-16 overflow-hidden">
+    <div
+      id="nft-generator"
+      className="bg-gradient-to-b from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 py-16 overflow-hidden"
+    >
+      <Toaster position="top-center" richColors expand closeButton />
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="flex flex-col max-w-2xl mx-auto h-[600px] px-4"
+        className="flex flex-col max-w-3xl mx-auto h-[700px] px-4"
       >
-        <h2 className="text-2xl font-bold text-center mb-6">NFT Generator</h2>
+        <div className="flex items-center justify-center mb-8">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+            className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 p-1 rounded-xl"
+          >
+            <div className="bg-white dark:bg-slate-900 px-6 py-2 rounded-lg flex items-center">
+              <Wand2 className="h-5 w-5 text-indigo-500 mr-2" />
+              <h2 className="text-2xl font-bold">NFT Generator</h2>
+            </div>
+          </motion.div>
+        </div>
+
         <motion.div
           whileHover={{ scale: 1.01 }}
           transition={{ type: "spring", stiffness: 400, damping: 17 }}
           className="flex flex-col h-full"
         >
-          <Card className="flex flex-col h-full shadow-lg overflow-hidden">
+          <Card className="flex flex-col h-full shadow-2xl overflow-hidden border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
             <motion.div
-              className="p-4 border-b"
+              className="p-5 border-b bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-900"
               initial={{ y: -20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.4 }}
@@ -147,26 +227,35 @@ export default function NFTMetadataAssistant() {
               <h3 className="text-xl font-bold text-center">
                 NFT Metadata Generator
               </h3>
-              <p className="text-center text-sm text-gray-500 mt-1">
-                Enter a description to generate NFT metadata with images
+              <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Describe your NFT vision and we'll generate the perfect metadata
               </p>
             </motion.div>
 
             <ScrollArea className="flex-1 overflow-y-auto">
-              <div className="p-4 h-full">
+              <div className="p-6 h-full">
                 {messages.length <= 1 ? (
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.4, duration: 0.6 }}
-                    className="flex items-center justify-center h-64"
+                    className="flex flex-col items-center justify-center h-72 gap-4"
                   >
-                    <p className="text-gray-500">
-                      Describe your NFT to generate metadata...
+                    <div className="p-4 rounded-full bg-indigo-100 dark:bg-indigo-900/30">
+                      <Wand2 className="h-12 w-12 text-indigo-500 dark:text-indigo-400" />
+                    </div>
+                    <p className="text-gray-500 dark:text-gray-400 text-center max-w-md">
+                      Describe your NFT in detail to generate metadata and
+                      images.
+                      <br />
+                      <span className="text-xs mt-2 block text-gray-400 dark:text-gray-500">
+                        Example: "A cosmic tiger with glowing blue stripes in a
+                        neon jungle"
+                      </span>
                     </p>
                   </motion.div>
                 ) : (
-                  <div className="space-y-4 pb-2">
+                  <div className="space-y-6 pb-2">
                     <AnimatePresence>
                       {messages.slice(1).map((message) => {
                         const isUser = message.role === "user";
@@ -186,10 +275,10 @@ export default function NFTMetadataAssistant() {
                             }`}
                           >
                             <div
-                              className={`max-w-xs md:max-w-md rounded-lg p-3 ${
+                              className={`max-w-sm md:max-w-lg rounded-2xl p-4 shadow-md ${
                                 isUser
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-muted"
+                                  ? "bg-indigo-600 text-white"
+                                  : "bg-white dark:bg-slate-800"
                               }`}
                             >
                               {isUser ? (
@@ -198,11 +287,11 @@ export default function NFTMetadataAssistant() {
                                 </div>
                               ) : (
                                 <>
-                                  <div className="font-medium mb-2">
-                                    Generated Metadata:
+                                  <div className="font-medium mb-3 text-sm uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                    Generated Metadata
                                   </div>
                                   {jsonContent ? (
-                                    <div className="space-y-3">
+                                    <div className="space-y-4">
                                       {jsonContent.image && (
                                         <motion.div
                                           initial={{ opacity: 0, scale: 0.8 }}
@@ -213,18 +302,26 @@ export default function NFTMetadataAssistant() {
                                           }}
                                           className="flex justify-center"
                                         >
-                                          <motion.img
-                                            whileHover={{ scale: 1.05 }}
+                                          <motion.div
+                                            whileHover={{
+                                              scale: 1.05,
+                                              rotate: 1,
+                                            }}
                                             transition={{
                                               type: "spring",
                                               stiffness: 300,
                                             }}
-                                            src={jsonContent.image}
-                                            alt={
-                                              jsonContent.name || "NFT image"
-                                            }
-                                            className="rounded-md max-h-40 w-auto shadow-sm"
-                                          />
+                                            className="relative group"
+                                          >
+                                            <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-300"></div>
+                                            <img
+                                              src={jsonContent.image}
+                                              alt={
+                                                jsonContent.name || "NFT image"
+                                              }
+                                              className="relative rounded-lg max-h-52 w-auto shadow-lg object-cover"
+                                            />
+                                          </motion.div>
                                         </motion.div>
                                       )}
                                       <motion.div
@@ -236,19 +333,21 @@ export default function NFTMetadataAssistant() {
                                         }}
                                         className="relative"
                                       >
-                                        <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded text-xs overflow-x-auto">
-                                          {JSON.stringify(jsonContent, null, 2)}
-                                        </pre>
-                                        <div className="absolute top-2 right-2 flex gap-1">
-                                          <motion.div
-                                            whileHover={{ scale: 1.1 }}
-                                          >
+                                        <div className="mb-2 flex justify-between items-center">
+                                          <div className="flex items-center">
+                                            <div className="mr-2 h-2 w-2 rounded-full bg-indigo-500"></div>
+                                            <h4 className="font-medium text-sm">
+                                              {jsonContent.name ||
+                                                "Untitled NFT"}
+                                            </h4>
+                                          </div>
+                                          <div className="flex gap-1">
                                             <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              className="h-6 w-6 bg-white/80 dark:bg-black/50 rounded-full"
+                                              variant="outline"
+                                              size="sm"
+                                              className="h-7 text-xs"
                                               onClick={() =>
-                                                generateNft(
+                                                copyToClipboard(
                                                   JSON.stringify(
                                                     jsonContent,
                                                     null,
@@ -257,20 +356,58 @@ export default function NFTMetadataAssistant() {
                                                 )
                                               }
                                             >
-                                              <Copy className="h-3 w-3" />
+                                              <Copy className="h-3 w-3 mr-1" />
+                                              Copy
                                             </Button>
-                                          </motion.div>
-                                          <motion.div
-                                            whileHover={{ scale: 1.1 }}
-                                          >
                                             <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              className="h-6 w-6 bg-white/80 dark:bg-black/50 rounded-full"
+                                              variant="outline"
+                                              size="sm"
+                                              className="h-7 text-xs"
+                                              onClick={() =>
+                                                downloadJSON(
+                                                  jsonContent,
+                                                  `${jsonContent.name
+                                                    .toLowerCase()
+                                                    .replace(/\s+/g, "-")}.json`
+                                                )
+                                              }
                                             >
-                                              <Download className="h-3 w-3" />
+                                              <Download className="h-3 w-3 mr-1" />
+                                              Save
                                             </Button>
-                                          </motion.div>
+                                          </div>
+                                        </div>
+                                        <pre className="bg-slate-50 dark:bg-slate-900 p-3 rounded-lg text-xs overflow-x-auto border border-slate-200 dark:border-slate-700">
+                                          {JSON.stringify(jsonContent, null, 2)}
+                                        </pre>
+                                        <div className="mt-3 flex justify-end">
+                                          <Button
+                                            variant="default"
+                                            size="sm"
+                                            className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white"
+                                            onClick={() =>
+                                              generateNft(
+                                                JSON.stringify(
+                                                  jsonContent,
+                                                  null,
+                                                  2
+                                                )
+                                              )
+                                            }
+                                            disabled={isMinting}
+                                          >
+                                            {isMinting ? (
+                                              <>
+                                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                Minting...
+                                              </>
+                                            ) : (
+                                              <>
+                                                <CircleCheckBig className="h-4 w-4 mr-2" />
+                                                Mint NFT
+                                              </>
+                                            )}
+                                          </Button>
                                         </div>
                                       </motion.div>
                                     </div>
@@ -295,24 +432,40 @@ export default function NFTMetadataAssistant() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.4 }}
-              className="p-4 border-t mt-auto"
+              className="p-4 border-t mt-auto bg-slate-50 dark:bg-slate-900"
             >
-              <form onSubmit={handleSubmit} className="flex gap-2">
+              <form onSubmit={handleSubmit} className="flex flex-col gap-3">
                 <Textarea
                   value={input}
                   onChange={handleInputChange}
-                  placeholder="Describe your NFT..."
-                  className="flex-1 min-h-20 resize-none"
+                  placeholder="Describe your NFT in detail..."
+                  className="flex-1 min-h-24 resize-none border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 rounded-xl"
+                  disabled={isLoading}
                 />
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Button type="submit" className="self-end h-full">
-                    <Send className="h-4 w-4 mr-2" />
-                    Generate
-                  </Button>
-                </motion.div>
+                <div className="flex justify-end">
+                  <motion.div
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    <Button
+                      type="submit"
+                      className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white shadow-md"
+                      disabled={isLoading || !input.trim()}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="h-4 w-4 mr-2" />
+                          Generate Metadata
+                        </>
+                      )}
+                    </Button>
+                  </motion.div>
+                </div>
               </form>
             </motion.div>
           </Card>
