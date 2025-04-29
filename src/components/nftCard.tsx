@@ -7,7 +7,7 @@ import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
-import { clusterApiUrl, PublicKey } from "@solana/web3.js";
+import { clusterApiUrl, PublicKey, SystemProgram } from "@solana/web3.js";
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import {
   fetchDigitalAsset,
@@ -16,10 +16,15 @@ import {
 } from "@metaplex-foundation/mpl-token-metadata";
 import { publicKey } from "@metaplex-foundation/umi";
 import { uploadToIPFS } from "@/utils/ipfs";
+import { web3 } from "@coral-xyz/anchor";
 
 function NftCard() {
   const nfts = useNFTStore((state) => state.nfts);
   const { wallet, signMessage } = useWallet();
+  const connection = new web3.Connection(
+    web3.clusterApiUrl("devnet"),
+    "confirmed"
+  );
   const updateNFT = useNFTStore((state) => state.updateNFT);
   const { getNFTById } = useNFTStore();
 
@@ -58,16 +63,47 @@ function NftCard() {
     }
   };
 
-  const handlePlaceBid = () => {
-    if (selectedNft?.owner == wallet?.adapter.publicKey) {
-      throw new Error("Cannot bid your own nft");
+  const handlePlaceBid = async () => {
+    if (!selectedNft || !wallet?.adapter.publicKey) return;
+
+    if (selectedNft.owner === wallet.adapter.publicKey.toString()) {
+      throw new Error("Cannot bid on your own NFT");
     }
-    if (selectedNft && wallet?.adapter.publicKey) {
-      updateNFT(selectedNft.id, {
-        isSold: IsSold.bidded,
+
+    if (!selectedNft.price) {
+      // throw new Error("NFT price not defined");
+      selectedNft.price = 0;
+    }
+
+    try {
+      await updateNFT(selectedNft.id, {
+        isSold: IsSold.sold,
         biddedBy: wallet.adapter.publicKey.toString(),
+        owner: wallet.adapter.publicKey.toString(),
       });
+
+      const toPubkey = new PublicKey(selectedNft.owner!);
+      const lamports = selectedNft.price * 1e9;
+
+      const transaction = new web3.Transaction().add(
+        web3.SystemProgram.transfer({
+          fromPubkey: wallet.adapter.publicKey,
+          toPubkey: toPubkey,
+          lamports: web3.LAMPORTS_PER_SOL * selectedNft.price,
+        })
+      );
+      const signature = await wallet.adapter.sendTransaction(
+        transaction,
+        connection
+      );
+
+      await connection.confirmTransaction(signature, "confirmed");
+
+      console.log(`Transaction confirmed. Signature: ${signature}`);
+
       setShowModal(false);
+    } catch (err) {
+      console.error("Failed to place bid:", err);
     }
   };
 
@@ -210,11 +246,11 @@ function NftCard() {
                   Available
                 </div>
               )}
-              {nft.isSold === IsSold.bidded && (
+              {/* {nft.isSold === IsSold.bidded && (
                 <div className="absolute top-4 right-4 bg-yellow-500/90 text-white text-xs font-medium px-2 py-1 rounded-full z-20">
                   Bidded
                 </div>
-              )}
+              )} */}
               {nft.isSold === IsSold.sold && (
                 <div className="absolute top-4 right-4 bg-red-500/90 text-white text-xs font-medium px-2 py-1 rounded-full z-20">
                   Sold
@@ -265,7 +301,7 @@ function NftCard() {
                       </Button>
                     </>
                   )}
-                  {nft.isSold === IsSold.bidded && (
+                  {nft.isSold === IsSold.sold && (
                     <span className="text-xs font-medium px-2 py-1 bg-yellow-600 rounded-md text-white">
                       {nft.biddedBy &&
                         `${nft.biddedBy.slice(0, 4)}...${nft.biddedBy.slice(

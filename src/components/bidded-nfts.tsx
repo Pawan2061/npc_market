@@ -56,7 +56,7 @@ function BiddedNfts() {
   const handleSell = async (id: number) => {
     const nft = getNFTById(id);
 
-    if (nft && nft.isSold === IsSold.bidded) {
+    if (nft && nft.isSold === IsSold.sold) {
       const sellerAddress = wallet?.adapter.publicKey?.toString();
       if (!sellerAddress) {
         toast.error("No wallet connected");
@@ -135,24 +135,24 @@ function BiddedNfts() {
                   Available
                 </div>
               )}
-              {nft.isSold === IsSold.sold && (
+              {/* {nft.isSold === IsSold.sold && (
                 <div className="absolute top-4 right-4 bg-red-500/90 text-white text-xs font-medium px-2 py-1 rounded-full z-20">
                   Sold
                 </div>
-              )}
-              {nft.isSold === IsSold.bidded && (
+              )} */}
+              {nft.isSold === IsSold.sold && (
                 <div className="absolute top-4 right-4 bg-yellow-500/90 text-white text-xs font-medium px-2 py-1 rounded-full z-20">
-                  Bidded by{" "}
+                  Owned by{" "}
                   {nft.biddedBy
                     ? `${nft.biddedBy.slice(0, 6)}...${nft.biddedBy.slice(-4)}`
                     : "N/A"}
                 </div>
               )}
-              {nft.isSold === IsSold.sold && (
+              {/* {nft.isSold === IsSold.sold && (
                 <div className="absolute top-4 right-4 bg-red-500/90 text-white text-xs font-medium px-2 py-1 rounded-full z-20">
                   Sold
                 </div>
-              )}
+              )} */}
             </Tilt>
             <div className="flex flex-col p-5 space-y-3">
               <div className="flex justify-between items-center">
@@ -187,7 +187,7 @@ function BiddedNfts() {
                       Remove
                     </Button>
                   )}
-                  {nft.isSold == IsSold.bidded && (
+                  {/* {nft.isSold !== IsSold.sold && (
                     <Button
                       onClick={() => handleSell(nft.id)}
                       className="px-4 py-2 mt-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center gap-1 text-sm"
@@ -196,7 +196,7 @@ function BiddedNfts() {
                       <PlusCircle size={14} />
                       Sell
                     </Button>
-                  )}
+                  )} */}
                 </div>
               </div>
             </div>
@@ -262,7 +262,7 @@ function BiddedNfts() {
               <Button
                 variant="default"
                 onClick={() => {
-                  IsSold.bidded;
+                  IsSold.sold;
                 }}
                 className="w-28 bg-black text-white dark:bg-white dark:text-black border border-black"
               >

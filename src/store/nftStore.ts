@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 
 export enum IsSold {
   available,
-  bidded,
+  // bidded,
   sold,
 }
 
@@ -28,7 +28,7 @@ type NFTStore = {
   updateNFT: (id: number, data: Partial<NFT>) => void;
   sellNFT: (id: number, newOwner: string) => void;
   getNFTsByUser: (address: string) => NFT[];
-  removeNFT: (id: number) => void; // New method for removing an NFT
+  removeNFT: (id: number) => void;
 };
 
 export const useNFTStore = create<NFTStore>()(
