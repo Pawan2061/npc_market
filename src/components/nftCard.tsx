@@ -59,6 +59,9 @@ function NftCard() {
   };
 
   const handlePlaceBid = () => {
+    if (selectedNft?.owner == wallet?.adapter.publicKey) {
+      throw new Error("Cannot bid your own nft");
+    }
     if (selectedNft && wallet?.adapter.publicKey) {
       updateNFT(selectedNft.id, {
         isSold: IsSold.bidded,

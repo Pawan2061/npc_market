@@ -10,6 +10,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { transferSol } from "@/utils/transfer-sol";
 import { getNpcMarketProgram } from "@project/anchor";
 import { useNpcMarketProgram } from "./npc_market/npc_market-data-access";
+import { toast, Toaster } from "sonner";
 
 function BiddedNfts() {
   const nfts = useNFTStore((state) => state.nfts);
@@ -33,7 +34,7 @@ function BiddedNfts() {
   };
   async function handleRemove(id: number) {
     if (!signMessage) {
-      console.error("Wallet does not support message signing");
+      toast.error("Wallet does not support message signing");
       return;
     }
 
@@ -45,8 +46,9 @@ function BiddedNfts() {
       console.log("Signature:", Buffer.from(signature).toString("hex"));
 
       removeNFT(id);
-      console.log(`NFT with ID ${id} removed`);
+      toast.success(`NFT with ID ${id} removed`);
     } catch (error) {
+      toast.error("User rejected signing or error occurred");
       console.error("User rejected signing or error occurred", error);
     }
   }
@@ -57,7 +59,7 @@ function BiddedNfts() {
     if (nft && nft.isSold === IsSold.bidded) {
       const sellerAddress = wallet?.adapter.publicKey?.toString();
       if (!sellerAddress) {
-        console.error("No wallet connected");
+        toast.error("No wallet connected");
         return;
       }
 
@@ -66,25 +68,32 @@ function BiddedNfts() {
 
         try {
           useNFTStore.getState().sellNFT(id, bidderAddress);
-
           await transferSol(nft.price, bidderAddress);
 
-          console.log(
-            `Successfully transferred ${nft.price} SOL from ${bidderAddress} to ${sellerAddress}`
+          toast.success(
+            `Transferred ${nft.price} SOL from ${bidderAddress.slice(
+              0,
+              6
+            )}...${bidderAddress.slice(-4)}`
           );
         } catch (error) {
+          toast.error("Error during sale: Could not complete transfer");
           console.error("Error during sale:", error);
         }
       } else {
-        console.log("You cannot sell your own NFT.");
+        toast.error("You cannot sell your own NFT", {
+          description: "Sale to self is not allowed",
+        });
       }
     } else {
-      console.log("NFT is not in a bidded state.");
+      toast.error("NFT is not in a bidded state.");
     }
   };
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-8 w-full">
+        <Toaster position="top-center" richColors expand closeButton />
+
         {nftsbyUser.map((nft) => (
           <div
             key={nft?.id}
