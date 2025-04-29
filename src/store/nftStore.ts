@@ -3,7 +3,6 @@ import { persist } from "zustand/middleware";
 
 export enum IsSold {
   available,
-  // bidded,
   sold,
 }
 

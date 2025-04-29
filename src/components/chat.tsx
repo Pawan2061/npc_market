@@ -19,7 +19,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { toast, Toaster } from "sonner";
 import { uploadToIPFS } from "@/utils/ipfs";
-import { useNpcMarketProgram } from "./npc_market/npc_market-data-access";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { generateSigner, percentAmount } from "@metaplex-foundation/umi";
@@ -29,10 +28,10 @@ import {
 } from "@metaplex-foundation/mpl-token-metadata";
 import { clusterApiUrl } from "@solana/web3.js";
 import { IsSold, useNFTStore } from "@/store/nftStore";
+import Image from "next/image";
 
 export default function NFTMetadataAssistant() {
   const { addNFT } = useNFTStore();
-  const { program } = useNpcMarketProgram();
   const { wallet } = useWallet();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isMinting, setIsMinting] = useState(false);
@@ -314,7 +313,7 @@ export default function NFTMetadataAssistant() {
                                             className="relative group"
                                           >
                                             <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-300"></div>
-                                            <img
+                                            <Image
                                               src={jsonContent.image}
                                               alt={
                                                 jsonContent.name || "NFT image"

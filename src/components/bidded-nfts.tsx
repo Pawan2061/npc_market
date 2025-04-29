@@ -7,10 +7,8 @@ import { PlusCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { transferSol } from "@/utils/transfer-sol";
-import { getNpcMarketProgram } from "@project/anchor";
-import { useNpcMarketProgram } from "./npc_market/npc_market-data-access";
 import { toast, Toaster } from "sonner";
+import Image from "next/image";
 
 function BiddedNfts() {
   const nfts = useNFTStore((state) => state.nfts);
@@ -53,42 +51,6 @@ function BiddedNfts() {
     }
   }
 
-  const handleSell = async (id: number) => {
-    const nft = getNFTById(id);
-
-    if (nft && nft.isSold === IsSold.sold) {
-      const sellerAddress = wallet?.adapter.publicKey?.toString();
-      if (!sellerAddress) {
-        toast.error("No wallet connected");
-        return;
-      }
-
-      if (nft.biddedBy && sellerAddress !== nft.biddedBy) {
-        const bidderAddress = nft.biddedBy;
-
-        try {
-          useNFTStore.getState().sellNFT(id, bidderAddress);
-          await transferSol(nft.price, bidderAddress);
-
-          toast.success(
-            `Transferred ${nft.price} SOL from ${bidderAddress.slice(
-              0,
-              6
-            )}...${bidderAddress.slice(-4)}`
-          );
-        } catch (error) {
-          toast.error("Error during sale: Could not complete transfer");
-          console.error("Error during sale:", error);
-        }
-      } else {
-        toast.error("You cannot sell your own NFT", {
-          description: "Sale to self is not allowed",
-        });
-      }
-    } else {
-      toast.error("NFT is not in a bidded state.");
-    }
-  };
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-8 w-full">
@@ -120,7 +82,7 @@ function BiddedNfts() {
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <img
+              <Image
                 src={nft.image}
                 alt={nft.name}
                 className="h-full w-full object-cover grayscale group-hover:grayscale-0 transition duration-700 scale-100 group-hover:scale-105"
@@ -229,7 +191,7 @@ function BiddedNfts() {
                 }}
                 className="rounded-xl mt-4 p-1 bg-white dark:bg-neutral-800 dark:border-neutral-700 border border-neutral-100 flex-shrink-0 overflow-hidden"
               >
-                <img
+                <Image
                   src={selectedNft.image}
                   alt={selectedNft.name}
                   className="rounded-lg h-20 w-20 md:h-40 md:w-40 object-cover flex-shrink-0"

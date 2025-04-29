@@ -17,6 +17,7 @@ import {
 import { publicKey } from "@metaplex-foundation/umi";
 import { uploadToIPFS } from "@/utils/ipfs";
 import { web3 } from "@coral-xyz/anchor";
+import Image from "next/image";
 
 function NftCard() {
   const nfts = useNFTStore((state) => state.nfts);
@@ -71,7 +72,6 @@ function NftCard() {
     }
 
     if (!selectedNft.price) {
-      // throw new Error("NFT price not defined");
       selectedNft.price = 0;
     }
 
@@ -236,7 +236,7 @@ function NftCard() {
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <img
+              <Image
                 src={nft.image}
                 alt={nft.name}
                 className="h-full w-full object-cover grayscale group-hover:grayscale-0 transition duration-700 scale-100 group-hover:scale-105"
@@ -341,7 +341,7 @@ function NftCard() {
                 }}
                 className="rounded-xl mt-4 p-1 bg-white dark:bg-neutral-800 dark:border-neutral-700 border border-neutral-100 flex-shrink-0 overflow-hidden"
               >
-                <img
+                <Image
                   src={selectedNft.image}
                   alt={selectedNft.name}
                   className="rounded-lg h-20 w-20 md:h-40 md:w-40 object-cover flex-shrink-0"
@@ -409,7 +409,7 @@ function NftCard() {
                 }}
                 className="rounded-xl mt-4 p-1 bg-white dark:bg-neutral-800 dark:border-neutral-700 border border-neutral-100 flex-shrink-0 overflow-hidden"
               >
-                <img
+                <Image
                   src={selectedNft.image}
                   alt={selectedNft.name}
                   className="rounded-lg h-20 w-20 md:h-40 md:w-40 object-cover flex-shrink-0"
