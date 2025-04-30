@@ -29,23 +29,14 @@ import {
 import { clusterApiUrl } from "@solana/web3.js";
 import { IsSold, useNFTStore } from "@/store/nftStore";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function NFTMetadataAssistant() {
   const { addNFT } = useNFTStore();
-  const { wallet } = useWallet();
+  const { wallet, connected } = useWallet();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isMinting, setIsMinting] = useState(false);
-
-  if (!wallet?.adapter) {
-    console.error("Wallet not connected");
-    return null;
-  }
-
-  const umi = createUmi(clusterApiUrl("devnet"))
-    .use(walletAdapterIdentity(wallet.adapter))
-    .use(mplTokenMetadata());
-
-  const mint = generateSigner(umi);
+  const router = useRouter();
 
   const systemPrompt = `You are an NFT metadata generator. When the user provides a description, generate JSON metadata including the following fields: "name", "description", "attributes" "symbol", and any other relevant fields for an NFT. Always include an "image" field using the URL format "https://picsum.photos/seed/[SEED]/800/800", where [SEED] is a deterministic string derived from the NFT's name or description (e.g., a slugified version or hash) and a symbol too. Ensure the JSON output is valid and uses double quotes for all property names and string values. The image must match the name or description provided so dont just pick out any random images, read the description carefully and provide the image`;
 
@@ -97,9 +88,21 @@ export default function NFTMetadataAssistant() {
   };
 
   const generateNft = async (text: string) => {
+    if (!connected || !wallet?.adapter) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+
     try {
       setIsMinting(true);
       const mintingToast = toast.loading("Minting your NFT...");
+
+      // Initialize UMI only when needed
+      const umi = createUmi(clusterApiUrl("devnet"))
+        .use(walletAdapterIdentity(wallet.adapter))
+        .use(mplTokenMetadata());
+
+      const mint = generateSigner(umi);
 
       const resp = JSON.parse(text);
       const ipfsHash = await uploadToIPFS(resp);
@@ -138,7 +141,7 @@ export default function NFTMetadataAssistant() {
         description: `Your ${resp.name} NFT is now on the blockchain`,
         action: {
           label: "View Collection",
-          onClick: () => console.log("Navigate to collection"),
+          onClick: () => router.push("/market"),
         },
         duration: 5000,
       });
@@ -173,15 +176,24 @@ export default function NFTMetadataAssistant() {
     toast.success("Metadata downloaded");
   };
 
-  const getMessageContent = (message: UIMessage) => {
+  const getMessageContent = (message: any) => {
     if (!message.parts || message.parts.length === 0) return "";
 
-    return message.parts.reduce((content, part) => {
+    return message.parts.reduce((content: any, part: { text: any }) => {
       if ("text" in part) {
         return content + part.text;
       }
       return content;
     }, "");
+  };
+
+  const handleMintClick = (jsonContent: any) => {
+    if (!connected) {
+      toast.error("Please connect your wallet to mint NFTs");
+      return;
+    }
+
+    generateNft(JSON.stringify(jsonContent, null, 2));
   };
 
   return (
@@ -229,6 +241,14 @@ export default function NFTMetadataAssistant() {
               <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-1">
                 Describe your NFT vision and we'll generate the perfect metadata
               </p>
+
+              {!connected && (
+                <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">
+                  <p className="text-center text-sm text-amber-600 dark:text-amber-400">
+                    Connect your wallet to mint NFTs
+                  </p>
+                </div>
+              )}
             </motion.div>
 
             <ScrollArea className="flex-1 overflow-y-auto">
@@ -319,6 +339,8 @@ export default function NFTMetadataAssistant() {
                                                 jsonContent.name || "NFT image"
                                               }
                                               className="relative rounded-lg max-h-52 w-auto shadow-lg object-cover"
+                                              width={200}
+                                              height={200}
                                             />
                                           </motion.div>
                                         </motion.div>
@@ -385,13 +407,7 @@ export default function NFTMetadataAssistant() {
                                             size="sm"
                                             className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white"
                                             onClick={() =>
-                                              generateNft(
-                                                JSON.stringify(
-                                                  jsonContent,
-                                                  null,
-                                                  2
-                                                )
-                                              )
+                                              handleMintClick(jsonContent)
                                             }
                                             disabled={isMinting}
                                           >
@@ -403,7 +419,9 @@ export default function NFTMetadataAssistant() {
                                             ) : (
                                               <>
                                                 <CircleCheckBig className="h-4 w-4 mr-2" />
-                                                Mint NFT
+                                                {connected
+                                                  ? "Mint NFT"
+                                                  : "Connect Wallet to Mint"}
                                               </>
                                             )}
                                           </Button>
