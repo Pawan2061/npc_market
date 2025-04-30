@@ -10,7 +10,14 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { toast, Toaster } from "sonner";
 import Image from "next/image";
 import { publicKey } from "@metaplex-foundation/umi";
-import { clusterApiUrl, PublicKey } from "@solana/web3.js";
+import {
+  clusterApiUrl,
+  ComputeBudgetProgram,
+  PublicKey,
+  Transaction,
+  Connection,
+  SystemProgram,
+} from "@solana/web3.js";
 import {
   fetchDigitalAsset,
   mplTokenMetadata,
@@ -18,10 +25,15 @@ import {
 import { uploadToIPFS } from "@/utils/ipfs";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
+import { web3 } from "@coral-xyz/anchor";
 
 function BiddedNfts() {
   const nfts = useNFTStore((state) => state.nfts);
   const { wallet, signMessage } = useWallet();
+  const connection = new web3.Connection(
+    web3.clusterApiUrl("devnet"),
+    "confirmed"
+  );
   const { getNFTsByUser, removeNFT } = useNFTStore();
   const address: string = wallet?.adapter.publicKey?.toString()!;
   console.log(wallet?.adapter.publicKey);
@@ -85,9 +97,7 @@ function BiddedNfts() {
   }
 
   const handleConfirmUpdate = async () => {
-    if (!selectedNft || !priceInputRef.current) {
-      return;
-    }
+    if (!selectedNft || !priceInputRef.current) return;
 
     const newPrice = parseFloat(priceInputRef.current.value);
     if (isNaN(newPrice) || newPrice <= 0) {
@@ -95,8 +105,9 @@ function BiddedNfts() {
       return;
     }
 
-    if (selectedNft.owner != wallet?.adapter.publicKey) {
-      toast.error("You cannot updateit");
+    if (selectedNft.owner !== wallet?.adapter.publicKey?.toBase58()) {
+      toast.error("You cannot update it");
+      return;
     }
 
     setUpdating(true);
@@ -108,65 +119,83 @@ function BiddedNfts() {
         selectedNft.mintedNftAddress.length > 0
       ) {
         const umi = getUmi();
-        if (!umi) {
-          throw new Error("Wallet not connected");
+        if (!umi) throw new Error("Wallet not connected");
+
+        if (selectedNft.mintedNftAddress.length > 88) {
+          console.log(
+            "This appears to be a transaction signature, not a mint address"
+          );
+          setShowUpdateModal(false);
+          return;
         }
 
         try {
-          if (selectedNft.mintedNftAddress.length > 88) {
-            console.log(
-              "This appears to be a transaction signature, not a mint address"
-            );
-            setShowUpdateModal(false);
-            return;
-          }
-
-          try {
-            new PublicKey(selectedNft.mintedNftAddress);
-          } catch (pubkeyError) {
-            console.error("Invalid mint address format:", pubkeyError);
-            setUpdateError(
-              "Invalid NFT address format. Local data updated only."
-            );
-            setShowUpdateModal(false);
-            return;
-          }
-
-          const mintPubkey = publicKey(selectedNft.mintedNftAddress);
-
-          const asset = await fetchDigitalAsset(umi, mintPubkey);
-
-          const metadataResponse = await fetch(asset.metadata.uri);
-          if (!metadataResponse.ok) {
-            throw new Error(
-              `Failed to fetch metadata from ${asset.metadata.uri}`
-            );
-          }
-
-          const metadata = await metadataResponse.json();
-
-          const updatedMetadata = {
-            ...metadata,
-            price: newPrice,
-          };
-
-          const message = `Approve updation of NFT with ID: ${selectedNft.id}`;
-          const encodedMessage = new TextEncoder().encode(message);
-
-          const signature = await signMessage!(encodedMessage);
-          console.log("Signature:", Buffer.from(signature).toString("hex"));
-          const upd = await uploadToIPFS(updatedMetadata);
-          updateNFT(selectedNft.id, {
-            price: newPrice,
-          });
-        } catch (err) {
-          console.error("Error updating blockchain metadata:", err);
+          new PublicKey(selectedNft.mintedNftAddress);
+        } catch (pubkeyError) {
+          console.error("Invalid mint address format:", pubkeyError);
+          setUpdateError(
+            "Invalid NFT address format. Local data updated only."
+          );
+          setShowUpdateModal(false);
+          return;
         }
+
+        const mintPubkey = publicKey(selectedNft.mintedNftAddress);
+        const asset = await fetchDigitalAsset(umi, mintPubkey);
+
+        const metadataResponse = await fetch(asset.metadata.uri);
+        if (!metadataResponse.ok) {
+          throw new Error(
+            `Failed to fetch metadata from ${asset.metadata.uri}`
+          );
+        }
+
+        const metadata = await metadataResponse.json();
+
+        const updatedMetadata = {
+          ...metadata,
+          price: newPrice,
+        };
+
+        const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
+          units: 400_000,
+        });
+        const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+          microLamports: 5000,
+        });
+
+        const feeBurnerIx = SystemProgram.transfer({
+          fromPubkey: wallet!.adapter.publicKey!,
+          toPubkey: wallet!.adapter.publicKey!,
+          lamports: 0,
+        });
+
+        const transaction = new Transaction()
+          .add(modifyComputeUnits)
+          .add(addPriorityFee)
+          .add(feeBurnerIx);
+
+        const txSig = await wallet!.adapter.sendTransaction(
+          transaction,
+          connection
+        );
+        await connection.confirmTransaction(txSig, "confirmed");
+
+        const message = `Approve updation of NFT with ID: ${selectedNft.id}`;
+        const encodedMessage = new TextEncoder().encode(message);
+        const signature = await signMessage!(encodedMessage);
+        console.log("Signature:", Buffer.from(signature).toString("hex"));
+
+        const ipfsResult = await uploadToIPFS(updatedMetadata);
+
+        updateNFT(selectedNft.id, {
+          price: newPrice,
+        });
+
+        setShowUpdateModal(false);
       } else {
         console.log("No mint address available, updated local store only");
       }
-
-      setShowUpdateModal(false);
     } catch (error) {
       console.error("Error updating NFT:", error);
       setUpdateError("Failed to update NFT. Please try again.");
@@ -272,16 +301,6 @@ function BiddedNfts() {
                       </Button>
                     </div>
                   )}
-                  {/* {nft.isSold !== IsSold.sold && (
-                    <Button
-                      onClick={() => handleSell(nft.id)}
-                      className="px-4 py-2 mt-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center gap-1 text-sm"
-                      variant="default"
-                    >
-                      <PlusCircle size={14} />
-                      Sell
-                    </Button>
-                  )} */}
                 </div>
               </div>
             </div>
