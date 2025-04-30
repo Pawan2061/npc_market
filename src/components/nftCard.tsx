@@ -1,3 +1,5 @@
+"use client";
+
 import { Tilt } from "@/components/ui/tilt";
 import { Spotlight } from "./ui/spotlight";
 import { IsSold, NFT, useNFTStore } from "@/store/nftStore";
@@ -28,6 +30,7 @@ function NftCard() {
 
   const [selectedNft, setSelectedNft] = useState<NFT | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [tab, setTab] = useState<"all" | "available" | "sold">("all");
 
   const priceInputRef = useRef<HTMLInputElement>(null);
 
@@ -91,12 +94,35 @@ function NftCard() {
     );
   }
 
+  const filteredNFTs = nfts.filter((nft) => {
+    if (tab === "available") return nft.isSold === IsSold.available;
+    if (tab === "sold") return nft.isSold === IsSold.sold;
+    return true;
+  });
+
   return (
     <>
       <Toaster position="top-center" richColors expand closeButton />
 
+      <div className="flex justify-center gap-4 pt-6">
+        {["all", "available", "sold"].map((key) => (
+          <Button
+            key={key}
+            variant={tab === key ? "default" : "secondary"}
+            onClick={() => setTab(key as typeof tab)}
+            className={`capitalize ${
+              tab === key
+                ? "bg-white text-black dark:bg-white dark:text-black"
+                : "bg-zinc-800 text-zinc-400"
+            }`}
+          >
+            {key}
+          </Button>
+        ))}
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-8 w-full">
-        {nfts.map((nft) => (
+        {filteredNFTs.map((nft) => (
           <div
             key={nft.id}
             className="flex flex-col rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-800 shadow-xl hover:shadow-2xl transition-all duration-300 border border-zinc-800 hover:border-zinc-700 group"
@@ -165,16 +191,14 @@ function NftCard() {
 
                 <div className="flex gap-2">
                   {nft.isSold === IsSold.available && (
-                    <>
-                      <Button
-                        onClick={() => handleSelectNft(nft.id)}
-                        className="px-4 py-2 mt-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center gap-1 text-sm"
-                        variant="default"
-                      >
-                        <PlusCircle size={14} />
-                        Buy
-                      </Button>
-                    </>
+                    <Button
+                      onClick={() => handleSelectNft(nft.id)}
+                      className="px-4 py-2 mt-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center gap-1 text-sm"
+                      variant="default"
+                    >
+                      <PlusCircle size={14} />
+                      Buy
+                    </Button>
                   )}
                   {nft.isSold === IsSold.sold && (
                     <span className="text-xs font-medium px-2 py-1 bg-yellow-600 rounded-md text-white">
