@@ -65,21 +65,30 @@ export default function PhantomNavbar() {
 
           <div className="hidden md:block">
             <div className="flex items-center space-x-4">
-              <a href="#" className="px-3 py-2 rounded-md hover:bg-slate-800">
-                Home
+              <a
+                href="/mint"
+                className="px-3 py-2 rounded-md hover:bg-slate-800"
+              >
+                Mint
               </a>
-              <a href="#" className="px-3 py-2 rounded-md hover:bg-slate-800">
-                Dashboard
+              <a
+                href="/market"
+                className="px-3 py-2 rounded-md hover:bg-slate-800"
+              >
+                Market
               </a>
-              <a href="#" className="px-3 py-2 rounded-md hover:bg-slate-800">
-                About
+              <a
+                href="/trade"
+                className="px-3 py-2 rounded-md hover:bg-slate-800"
+              >
+                Trade
               </a>
-              <Link
+              {/* <Link
                 href="/trade"
                 className="block px-3 py-2 rounded-md hover:bg-slate-700"
               >
                 Trade
-              </Link>
+              </Link> */}
             </div>
           </div>
 
@@ -141,16 +150,16 @@ export default function PhantomNavbar() {
         <div className="md:hidden bg-slate-800">
           <div className="px-2 pt-2 pb-3 space-y-1">
             <a
-              href="#"
+              href="/mint"
               className="block px-3 py-2 rounded-md hover:bg-slate-700"
             >
-              Home
+              Mint
             </a>
             <a
-              href="#"
+              href="/market"
               className="block px-3 py-2 rounded-md hover:bg-slate-700"
             >
-              Dashboard
+              Market
             </a>
             <Link
               href="/trade"

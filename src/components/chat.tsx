@@ -127,7 +127,7 @@ export default function NFTMetadataAssistant() {
         name: resp.name,
         description: resp.description,
         image: resp.image,
-        price: 0,
+        price: 0.2,
         isSold: IsSold.available,
         symbol: resp.symbol,
         owner: wallet.adapter.publicKey
@@ -196,6 +196,16 @@ export default function NFTMetadataAssistant() {
     generateNft(JSON.stringify(jsonContent, null, 2));
   };
 
+  if (!connected) {
+    return (
+      <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/10 border-l-4 border-yellow-400 dark:border-yellow-500 rounded-md shadow-sm">
+        <p className="text-sm text-yellow-800 dark:text-yellow-300 text-center">
+          🔐 Please connect your wallet to mint your NFTs.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div
       id="nft-generator"
@@ -241,14 +251,6 @@ export default function NFTMetadataAssistant() {
               <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-1">
                 Describe your NFT vision and we'll generate the perfect metadata
               </p>
-
-              {!connected && (
-                <div className="mt-2 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">
-                  <p className="text-center text-sm text-amber-600 dark:text-amber-400">
-                    Connect your wallet to mint NFTs
-                  </p>
-                </div>
-              )}
             </motion.div>
 
             <ScrollArea className="flex-1 overflow-y-auto">

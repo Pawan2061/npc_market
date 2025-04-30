@@ -9,11 +9,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { clusterApiUrl, PublicKey, SystemProgram } from "@solana/web3.js";
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
-import {
-  fetchDigitalAsset,
-  mplTokenMetadata,
-  updateV1,
-} from "@metaplex-foundation/mpl-token-metadata";
+import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import { publicKey } from "@metaplex-foundation/umi";
 import { uploadToIPFS } from "@/utils/ipfs";
 import { web3 } from "@coral-xyz/anchor";
@@ -32,36 +28,14 @@ function NftCard() {
 
   const [selectedNft, setSelectedNft] = useState<NFT | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [showUpdateModal, setShowUpdateModal] = useState(false);
-  const [updating, setUpdating] = useState(false);
-  const [updateError, setUpdateError] = useState<string | null>(null);
 
   const priceInputRef = useRef<HTMLInputElement>(null);
-
-  const getUmi = () => {
-    if (!wallet?.adapter) {
-      return null;
-    }
-
-    return createUmi(clusterApiUrl("devnet"))
-      .use(walletAdapterIdentity(wallet.adapter))
-      .use(mplTokenMetadata());
-  };
 
   const handleSelectNft = (id: number) => {
     const nft = getNFTById(id);
     if (nft) {
       setSelectedNft(nft);
       setShowModal(true);
-    }
-  };
-
-  const handleUpdate = (id: number) => {
-    const nft = getNFTById(id);
-    if (nft) {
-      setSelectedNft(nft);
-      setShowUpdateModal(true);
-      setUpdateError(null);
     }
   };
 
@@ -106,98 +80,6 @@ function NftCard() {
       setShowModal(false);
     } catch (err) {
       console.error("Failed to place bid:", err);
-    }
-  };
-
-  const handleConfirmUpdate = async () => {
-    if (!selectedNft || !priceInputRef.current) {
-      return;
-    }
-
-    const newPrice = parseFloat(priceInputRef.current.value);
-    if (isNaN(newPrice) || newPrice <= 0) {
-      setUpdateError("Please enter a valid price");
-      return;
-    }
-
-    if (selectedNft.owner != wallet?.adapter.publicKey) {
-      throw new Error("you cannot update it");
-    }
-
-    setUpdating(true);
-    setUpdateError(null);
-
-    try {
-      updateNFT(selectedNft.id, {
-        price: newPrice,
-      });
-
-      if (
-        selectedNft.mintedNftAddress &&
-        selectedNft.mintedNftAddress.length > 0
-      ) {
-        const umi = getUmi();
-        if (!umi) {
-          throw new Error("Wallet not connected");
-        }
-
-        try {
-          if (selectedNft.mintedNftAddress.length > 88) {
-            console.log(
-              "This appears to be a transaction signature, not a mint address"
-            );
-            setShowUpdateModal(false);
-            return;
-          }
-
-          try {
-            new PublicKey(selectedNft.mintedNftAddress);
-          } catch (pubkeyError) {
-            console.error("Invalid mint address format:", pubkeyError);
-            setUpdateError(
-              "Invalid NFT address format. Local data updated only."
-            );
-            setShowUpdateModal(false);
-            return;
-          }
-
-          const mintPubkey = publicKey(selectedNft.mintedNftAddress);
-
-          const asset = await fetchDigitalAsset(umi, mintPubkey);
-
-          const metadataResponse = await fetch(asset.metadata.uri);
-          if (!metadataResponse.ok) {
-            throw new Error(
-              `Failed to fetch metadata from ${asset.metadata.uri}`
-            );
-          }
-
-          const metadata = await metadataResponse.json();
-
-          const updatedMetadata = {
-            ...metadata,
-            price: newPrice,
-          };
-
-          const message = `Approve updation of NFT with ID: ${selectedNft.id}`;
-          const encodedMessage = new TextEncoder().encode(message);
-
-          const signature = await signMessage!(encodedMessage);
-          console.log("Signature:", Buffer.from(signature).toString("hex"));
-          const upd = await uploadToIPFS(updatedMetadata);
-        } catch (err) {
-          console.error("Error updating blockchain metadata:", err);
-        }
-      } else {
-        console.log("No mint address available, updated local store only");
-      }
-
-      setShowUpdateModal(false);
-    } catch (error) {
-      console.error("Error updating NFT:", error);
-      setUpdateError("Failed to update NFT. Please try again.");
-    } finally {
-      setUpdating(false);
     }
   };
 
@@ -252,11 +134,7 @@ function NftCard() {
                   Available
                 </div>
               )}
-              {/* {nft.isSold === IsSold.bidded && (
-                <div className="absolute top-4 right-4 bg-yellow-500/90 text-white text-xs font-medium px-2 py-1 rounded-full z-20">
-                  Bidded
-                </div>
-              )} */}
+
               {nft.isSold === IsSold.sold && (
                 <div className="absolute top-4 right-4 bg-red-500/90 text-white text-xs font-medium px-2 py-1 rounded-full z-20">
                   Sold
@@ -294,16 +172,7 @@ function NftCard() {
                         variant="default"
                       >
                         <PlusCircle size={14} />
-                        Bid
-                      </Button>
-
-                      <Button
-                        onClick={() => handleUpdate(nft.id)}
-                        className="px-4 py-2 mt-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center gap-1 text-sm"
-                        variant="default"
-                      >
-                        <Edit size={14} />
-                        Update
+                        Buy
                       </Button>
                     </>
                   )}
@@ -386,89 +255,6 @@ function NftCard() {
                 className="w-28 bg-black text-white dark:bg-white dark:text-black border border-black"
               >
                 Place Bid
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showUpdateModal && selectedNft && (
-        <div className="fixed w-full inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
-            <h4 className="text-lg md:text-2xl text-neutral-600 dark:text-neutral-100 font-bold text-center mb-6">
-              Update {selectedNft.name}
-            </h4>
-
-            <div className="flex justify-center items-center">
-              <motion.div
-                key={"update-image"}
-                style={{
-                  rotate: Math.random() * 20 - 10,
-                }}
-                whileHover={{
-                  scale: 1.1,
-                  rotate: 0,
-                  zIndex: 100,
-                }}
-                whileTap={{
-                  scale: 1.1,
-                  rotate: 0,
-                  zIndex: 100,
-                }}
-                className="rounded-xl mt-4 p-1 bg-white dark:bg-neutral-800 dark:border-neutral-700 border border-neutral-100 flex-shrink-0 overflow-hidden"
-              >
-                <Image
-                  width={20}
-                  height={20}
-                  src={selectedNft.image}
-                  alt={selectedNft.name}
-                  className="rounded-lg h-20 w-20 md:h-40 md:w-40 object-cover flex-shrink-0"
-                />
-              </motion.div>
-            </div>
-
-            <div className="py-8 flex flex-wrap gap-x-4 gap-y-6 items-start justify-start max-w-sm mx-auto">
-              <div className="flex flex-col space-y-2 w-full">
-                <span className="text-neutral-700 dark:text-neutral-300 text-sm">
-                  Current Price: {selectedNft.price} SOL
-                </span>
-
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                    New Price (SOL)
-                  </label>
-                  <input
-                    type="number"
-                    ref={priceInputRef}
-                    step="0.01"
-                    min="0.01"
-                    className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    defaultValue={selectedNft.price}
-                  />
-                </div>
-
-                {updateError && (
-                  <div className="mt-2 text-red-500 text-sm">{updateError}</div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-4 pt-4 border-t border-gray-200 dark:border-zinc-800">
-              <Button
-                variant="secondary"
-                onClick={() => setShowUpdateModal(false)}
-                className="w-28 bg-gray-200 text-black dark:bg-black dark:border-black dark:text-white border border-gray-300"
-                disabled={updating}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="default"
-                onClick={handleConfirmUpdate}
-                className="w-28 bg-black text-white dark:bg-white dark:text-black border border-black"
-                disabled={updating}
-              >
-                {updating ? "Updating..." : "Update"}
               </Button>
             </div>
           </div>
