@@ -4,7 +4,7 @@ import { Tilt } from "@/components/ui/tilt";
 import { Spotlight } from "./ui/spotlight";
 import { IsSold, NFT, useNFTStore } from "@/store/nftStore";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Edit } from "lucide-react";
+import { PlusCircle, Edit, BadgeInfo } from "lucide-react";
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -17,10 +17,12 @@ import { uploadToIPFS } from "@/utils/ipfs";
 import { web3 } from "@coral-xyz/anchor";
 import Image from "next/image";
 import { Toaster, toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 function NftCard() {
   const nfts = useNFTStore((state) => state.nfts);
   const { wallet, signMessage } = useWallet();
+  const router = useRouter();
   const connection = new web3.Connection(
     web3.clusterApiUrl("devnet"),
     "confirmed"
@@ -99,6 +101,7 @@ function NftCard() {
     if (tab === "sold") return nft.isSold === IsSold.sold;
     return true;
   });
+  console.log(filteredNFTs, "nfts");
 
   return (
     <>
@@ -200,6 +203,20 @@ function NftCard() {
                       Buy
                     </Button>
                   )}
+
+                  <Button
+                    onClick={() => {
+                      console.log(nft.mintedNftAddress);
+
+                      const url = `https://explorer.solana.com/address/${nft.mintedNftAddress}?cluster=devnet`;
+                      window.open(url, "_blank");
+                    }}
+                    className="px-4 py-2 mt-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg flex items-center gap-1 text-sm"
+                    variant="default"
+                  >
+                    <BadgeInfo size={14} />
+                  </Button>
+
                   {nft.isSold === IsSold.sold && (
                     <span className="text-xs font-medium px-2 py-1 bg-yellow-600 rounded-md text-white">
                       {nft.biddedBy &&
