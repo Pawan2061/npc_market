@@ -9,7 +9,7 @@ import { AnimatedModalDemo } from "@/components/nft-update";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary to-secondary text-white">
+    <div className="min-h-screen bg-gradient-to-br from-primary to-secondary text-white overflow-hidden">
       <div className="bg-background bg-opacity-90 min-h-screen">
         <motion.section
           initial="hidden"
