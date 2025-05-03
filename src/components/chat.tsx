@@ -30,6 +30,7 @@ import { clusterApiUrl } from "@solana/web3.js";
 import { IsSold, useNFTStore } from "@/store/nftStore";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { generateImageFromStability } from "@/utils/image";
 
 export default function NFTMetadataAssistant() {
   const { addNFT } = useNFTStore();
@@ -39,6 +40,7 @@ export default function NFTMetadataAssistant() {
   const router = useRouter();
 
   const systemPrompt = `You are an NFT metadata generator. When the user provides a description, generate JSON metadata including the following fields: "name", "description", "attributes" "symbol", and any other relevant fields for an NFT. Always include an "image" field using the URL format "https://picsum.photos/seed/[SEED]/800/800", where [SEED] is a deterministic string derived from the NFT's name or description (e.g., a slugified version or hash) and a symbol too. Ensure the JSON output is valid and uses double quotes for all property names and string values. The image must match the name or description provided so dont just pick out any random images, read the description carefully and provide the image`;
+  const [src, setSrc] = useState("");
 
   const { messages, input, handleInputChange, handleSubmit, isLoading } =
     useChat({
@@ -87,7 +89,12 @@ export default function NFTMetadataAssistant() {
     }
   };
 
-  const generateNft = async (text: string) => {
+  const generateNft = async (text: string, userInput: string) => {
+    console.log(userInput, "userinoput is here");
+    const image = await generateImageFromStability(userInput);
+    console.log(image, "image will be here");
+    setSrc(image);
+
     if (!connected || !wallet?.adapter) {
       toast.error("Please connect your wallet first");
       return;
@@ -97,7 +104,6 @@ export default function NFTMetadataAssistant() {
       setIsMinting(true);
       const mintingToast = toast.loading("Minting your NFT...");
 
-      // Initialize UMI only when needed
       const umi = createUmi(clusterApiUrl("devnet"))
         .use(walletAdapterIdentity(wallet.adapter))
         .use(mplTokenMetadata());
@@ -105,6 +111,9 @@ export default function NFTMetadataAssistant() {
       const mint = generateSigner(umi);
 
       const resp = JSON.parse(text);
+      console.log(resp, "resp will be here");
+      resp.image = image;
+
       const ipfsHash = await uploadToIPFS(resp);
       const metadataUri = `https://ipfs.io/ipfs/${ipfsHash}`;
 
@@ -126,7 +135,7 @@ export default function NFTMetadataAssistant() {
         id: Date.now(),
         name: resp.name,
         description: resp.description,
-        image: resp.image,
+        image: image,
         price: 0.2,
         isSold: IsSold.available,
         symbol: resp.symbol,
@@ -192,8 +201,12 @@ export default function NFTMetadataAssistant() {
       toast.error("Please connect your wallet to mint NFTs");
       return;
     }
+    const userInput = messages
+      .slice()
+      .reverse()
+      .find((msg) => msg.role === "user")?.content;
 
-    generateNft(JSON.stringify(jsonContent, null, 2));
+    generateNft(JSON.stringify(jsonContent, null, 2), userInput || "");
   };
 
   if (!connected) {
@@ -209,7 +222,7 @@ export default function NFTMetadataAssistant() {
   return (
     <div
       id="nft-generator"
-      className="bg-gradient-to-b from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 py-16 overflow-hidden"
+      className="bg-gradient-to-b overflow-y-auto from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 py-16 overflow-hidden"
     >
       <Toaster position="top-center" richColors expand closeButton />
 
