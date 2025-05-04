@@ -36,6 +36,7 @@ export default function NFTMetadataAssistant() {
   const { addNFT } = useNFTStore();
   const { wallet, connected } = useWallet();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [image, setImage] = useState("");
   const [isMinting, setIsMinting] = useState(false);
   const router = useRouter();
 
@@ -91,16 +92,18 @@ export default function NFTMetadataAssistant() {
 
   const generateNft = async (text: string, userInput: string) => {
     console.log(userInput, "userinoput is here");
-    const image = await generateImageFromStability(userInput);
-    console.log(image, "image will be here");
-    setSrc(image);
-
-    if (!connected || !wallet?.adapter) {
-      toast.error("Please connect your wallet first");
-      return;
-    }
 
     try {
+      setIsGenerating(true);
+
+      setSrc(src);
+      setIsGenerating(false);
+
+      if (!connected || !wallet?.adapter) {
+        toast.error("Please connect your wallet first");
+        return;
+      }
+
       setIsMinting(true);
       const mintingToast = toast.loading("Minting your NFT...");
 
@@ -112,7 +115,9 @@ export default function NFTMetadataAssistant() {
 
       const resp = JSON.parse(text);
       console.log(resp, "resp will be here");
-      resp.image = image;
+      resp.image = src;
+
+      console.log(resp.image, "is here");
 
       const ipfsHash = await uploadToIPFS(resp);
       const metadataUri = `https://ipfs.io/ipfs/${ipfsHash}`;
@@ -135,7 +140,7 @@ export default function NFTMetadataAssistant() {
         id: Date.now(),
         name: resp.name,
         description: resp.description,
-        image: image,
+        image: src,
         price: 0.2,
         isSold: IsSold.available,
         symbol: resp.symbol,
@@ -160,6 +165,7 @@ export default function NFTMetadataAssistant() {
         description:
           error instanceof Error ? error.message : "Unknown error occurred",
       });
+      setIsGenerating(false);
     } finally {
       setIsMinting(false);
     }
@@ -196,6 +202,33 @@ export default function NFTMetadataAssistant() {
     }, "");
   };
 
+  const generateImage = async (userInput: string) => {
+    if (!userInput) {
+      const lastUserMessage = messages
+        .slice()
+        .reverse()
+        .find((msg) => msg.role === "user")?.content;
+
+      userInput = lastUserMessage || "";
+    }
+
+    try {
+      setIsGenerating(true);
+      const imageUrl = await generateImageFromStability(userInput);
+      setSrc(imageUrl);
+      toast.success("Image generated successfully!");
+      return imageUrl;
+    } catch (error) {
+      console.error("Error generating image:", error);
+      toast.error("Failed to generate image", {
+        description:
+          error instanceof Error ? error.message : "Unknown error occurred",
+      });
+      return null;
+    } finally {
+      setIsGenerating(false);
+    }
+  };
   const handleMintClick = (jsonContent: any) => {
     if (!connected) {
       toast.error("Please connect your wallet to mint NFTs");
@@ -334,7 +367,7 @@ export default function NFTMetadataAssistant() {
                                             delay: 0.3,
                                             duration: 0.5,
                                           }}
-                                          className="flex justify-center"
+                                          className="flex flex-col items-center"
                                         >
                                           <motion.div
                                             whileHover={{
@@ -345,19 +378,54 @@ export default function NFTMetadataAssistant() {
                                               type: "spring",
                                               stiffness: 300,
                                             }}
-                                            className="relative group"
+                                            className="relative group mb-2"
                                           >
                                             <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-lg blur opacity-75 group-hover:opacity-100 transition duration-300"></div>
-                                            <Image
-                                              src={jsonContent.image}
-                                              alt={
-                                                jsonContent.name || "NFT image"
-                                              }
-                                              className="relative rounded-lg max-h-52 w-auto shadow-lg object-cover"
-                                              width={200}
-                                              height={200}
-                                            />
+                                            {isGenerating ? (
+                                              <div className="relative w-48 h-48 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-lg">
+                                                <Loader2 className="h-8 w-8 text-indigo-500 animate-spin" />
+                                              </div>
+                                            ) : src ? (
+                                              <img
+                                                src={src}
+                                                alt={
+                                                  jsonContent.name ||
+                                                  "NFT image"
+                                                }
+                                                className="relative rounded-lg max-h-52 w-auto shadow-lg object-cover"
+                                                width={200}
+                                                height={200}
+                                              />
+                                            ) : (
+                                              <div className="relative w-48 h-48 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-lg">
+                                                <p className="text-xs text-center text-slate-500 p-4">
+                                                  Click "Generate Image" below
+                                                </p>
+                                              </div>
+                                            )}
                                           </motion.div>
+
+                                          {!src && !isGenerating && (
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              className="mb-3"
+                                              onClick={() => generateImage("")}
+                                              disabled={isGenerating}
+                                            >
+                                              {isGenerating ? (
+                                                <>
+                                                  <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                                                  Generating...
+                                                </>
+                                              ) : (
+                                                <>
+                                                  <Wand2 className="h-3 w-3 mr-2" />
+                                                  Generate Image
+                                                </>
+                                              )}
+                                            </Button>
+                                          )}
                                         </motion.div>
                                       )}
                                       <motion.div
