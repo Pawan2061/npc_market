@@ -233,7 +233,7 @@ function NftCard() {
       </div>
 
       {showModal && selectedNft && (
-        <div className="fixed max-w-3xl inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="fixed  inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
             <h4 className="text-lg md:text-2xl text-neutral-600 dark:text-neutral-100 font-bold text-center mb-6">
               {selectedNft.name}

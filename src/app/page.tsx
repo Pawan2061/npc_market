@@ -3,19 +3,24 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, ShoppingCart } from "lucide-react";
+import { ArrowRight, Sparkles, ShoppingCart, TwitterIcon } from "lucide-react";
 import { containerVariants, fadeInUp, itemVariants } from "@/utils/motion";
 import { AnimatedModalDemo } from "@/components/nft-update";
+import { DevnetAlert } from "@/components/devnet-alert";
 
 export default function Home() {
   return (
-    <div className=" bg-gradient-to-br from-primary to-secondary text-white ">
-      <div className="bg-background bg-opacity-90 ">
+    <div className="bg-gradient-to-br from-primary to-secondary text-white">
+      <div className="bg-background bg-opacity-0 ">
+        <div className="container mx-auto pt-4 px-4 ">
+          <DevnetAlert />
+        </div>
+
         <motion.section
           initial="hidden"
           animate="visible"
           variants={containerVariants}
-          className="relative h-screen flex items-center justify-center overflow-hidden"
+          className="relative h-1/2 flex items-center justify-center overflow-hidden py-24"
         >
           <motion.div
             className="absolute inset-0"
@@ -146,6 +151,32 @@ export default function Home() {
                 </Button>
               </Link>
             </motion.div>
+          </div>
+
+          <div className="flex justify-center items-center mt-16">
+            <div className="text-center">
+              <p className="text-center text-lg leading-loose">
+                Built by{" "}
+                <a
+                  href="https://x.com/_dwightschrutee"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium underline underline-offset-4"
+                >
+                  @pawan
+                </a>
+                . Source code is available on{" "}
+                <a
+                  href="https://github.com/Pawan2061/npc_market/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium underline underline-offset-4"
+                >
+                  Github
+                </a>
+                .
+              </p>
+            </div>
           </div>
         </motion.section>
       </div>

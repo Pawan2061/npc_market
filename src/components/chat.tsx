@@ -12,6 +12,7 @@ import {
   Wand2,
   Loader2,
   CircleCheckBig,
+  ArrowLeft,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { UIMessage } from "ai";
@@ -31,6 +32,7 @@ import { IsSold, useNFTStore } from "@/store/nftStore";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { generateImageFromStability } from "@/utils/image";
+import Link from "next/link";
 
 export default function NFTMetadataAssistant() {
   const { addNFT } = useNFTStore();
@@ -257,6 +259,15 @@ export default function NFTMetadataAssistant() {
       id="nft-generator"
       className="bg-gradient-to-b overflow-y-auto from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 py-16 overflow-hidden"
     >
+      <div className="absolute left-2  lg:left-40">
+        <Link href="/">
+          <Button variant="ghost" className="group hover:bg-indigo-500">
+            <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+            Home{" "}
+          </Button>
+        </Link>
+      </div>
+
       <Toaster position="top-center" richColors expand closeButton />
 
       <motion.div
