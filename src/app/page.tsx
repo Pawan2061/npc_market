@@ -40,7 +40,7 @@ export default function Home() {
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.2 }}
               >
-                Create & Trade AI-Generated NFTs
+                Create & Trade AI MODELS
               </motion.h1>
               <motion.p
                 className="text-xl text-muted-foreground mb-8"
