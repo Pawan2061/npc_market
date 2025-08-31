@@ -13,27 +13,48 @@ const IPFS_GATEWAYS = [
 
 export async function uploadToIPFS(data: NFTMetadata): Promise<string> {
   try {
+    // Check if API keys are available
+    if (!PINATA_API_KEY || !PINATA_SECRET_KEY) {
+      throw new Error(
+        "Pinata API keys are not configured. Please check your environment variables."
+      );
+    }
+
     const jsonString = JSON.stringify(data);
-    console.log(jsonString, "okay data is here finally");
+    console.log("Uploading metadata to IPFS:", jsonString);
 
     const formData = new FormData();
     const blob = new Blob([jsonString], { type: "application/json" });
     formData.append("file", blob, "metadata.json");
 
+    console.log(
+      "Making request to Pinata with API key:",
+      PINATA_API_KEY?.substring(0, 8) + "..."
+    );
+
     const res = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
       method: "POST",
       headers: {
-        pinata_api_key: PINATA_API_KEY || "",
-        pinata_secret_api_key: PINATA_SECRET_KEY || "",
+        pinata_api_key: PINATA_API_KEY,
+        pinata_secret_api_key: PINATA_SECRET_KEY,
       },
       body: formData,
     });
 
     const data_res = await res.json();
-    console.log(data_res, "uploaded data res is here");
+    console.log("Pinata response:", data_res);
 
     if (!res.ok) {
-      throw new Error("Failed to upload to Pinata");
+      console.error("Pinata API error:", {
+        status: res.status,
+        statusText: res.statusText,
+        response: data_res,
+      });
+      throw new Error(
+        `Failed to upload to Pinata: ${res.status} ${
+          res.statusText
+        } - ${JSON.stringify(data_res)}`
+      );
     }
 
     return data_res.IpfsHash;
@@ -45,22 +66,41 @@ export async function uploadToIPFS(data: NFTMetadata): Promise<string> {
 
 export async function uploadImageToIPFS(file: File): Promise<string> {
   try {
+    // Check if API keys are available
+    if (!PINATA_API_KEY || !PINATA_SECRET_KEY) {
+      throw new Error(
+        "Pinata API keys are not configured. Please check your environment variables."
+      );
+    }
+
+    console.log("Uploading image to IPFS:", file.name, "Size:", file.size);
+
     const formData = new FormData();
     formData.append("file", file);
 
     const res = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
       method: "POST",
       headers: {
-        pinata_api_key: PINATA_API_KEY || "",
-        pinata_secret_api_key: PINATA_SECRET_KEY || "",
+        pinata_api_key: PINATA_API_KEY,
+        pinata_secret_api_key: PINATA_SECRET_KEY,
       },
       body: formData,
     });
 
     const data = await res.json();
+    console.log("Pinata image upload response:", data);
 
     if (!res.ok) {
-      throw new Error("Failed to upload to Pinata");
+      console.error("Pinata API error:", {
+        status: res.status,
+        statusText: res.statusText,
+        response: data,
+      });
+      throw new Error(
+        `Failed to upload image to Pinata: ${res.status} ${
+          res.statusText
+        } - ${JSON.stringify(data)}`
+      );
     }
 
     return data.IpfsHash;
